@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Type
-
-from ufo.utils import print_with_color
+from typing import Dict, List, Type
 
 
 class ReceiverBasic(ABC):
@@ -14,26 +12,14 @@ class ReceiverBasic(ABC):
     The abstract receiver interface.
     """
 
-    def __init__(self) -> None:
-        """
-        Initialize the receiver.
-        """
+    _command_registry: Dict[str, Type[CommandBasic]] = {}
 
-        self.command_registry = self.get_default_command_registry()
-        self.supported_command_names = self.get_supported_command_names()
-
-    @abstractmethod
-    def get_default_command_registry(self) -> Dict:
-        """
-        The default command registry.
-        """
-        pass
-
-    def get_command_registry(self) -> Dict:
+    @property
+    def command_registry(self) -> Dict[str, Type[CommandBasic]]:
         """
         Get the command registry.
         """
-        return self.command_registry
+        return self._command_registry
 
     def register_command(self, command_name: str, command: CommandBasic) -> None:
         """
@@ -44,7 +30,8 @@ class ReceiverBasic(ABC):
 
         self.command_registry[command_name] = command
 
-    def get_supported_command_names(self) -> List[str]:
+    @property
+    def supported_command_names(self) -> List[str]:
         """
         Get the command name list.
         """
@@ -56,28 +43,15 @@ class ReceiverBasic(ABC):
         """
         return {command_name: self for command_name in self.supported_command_names}
 
-    @staticmethod
-    def name_to_command_class(
-        global_namespace: Dict[str, Any], class_name_mapping: Dict[str, str]
-    ) -> Dict[str, Type[CommandBasic]]:
+    @classmethod
+    def register(cls, command_class: Type[CommandBasic]) -> Type[CommandBasic]:
         """
-        Convert the class name to the command class.
-        :param class_name_mapping: The class name mapping {api_key: class_name}.
-        :return: The command class mapping.
+        Decorator to register the state class to the state manager.
+        :param command_class: The state class to be registered.
+        :return: The state class.
         """
-
-        api_class_registry = {}
-
-        for key, command_class_name in class_name_mapping.items():
-            if command_class_name in global_namespace:
-                api_class_registry[key] = global_namespace[command_class_name]
-            else:
-                print_with_color(
-                    "Warning: The command class {command_class_name} with api key {key} is not found in the global namespace.",
-                    "yellow",
-                )
-
-        return api_class_registry
+        cls._command_registry[command_class.name()] = command_class
+        return command_class
 
     @property
     def type_name(self):
@@ -100,17 +74,27 @@ class CommandBasic(ABC):
 
     @abstractmethod
     def execute(self):
+        """
+        Execute the command.
+        """
         pass
 
     def undo(self):
+        """
+        Undo the command.
+        """
         pass
 
     def redo(self):
+        """
+        Redo the command.
+        """
         self.execute()
 
-    @property
-    def name(self):
-        return self.__class__.__name__
+    @classmethod
+    @abstractmethod
+    def name(cls):
+        return cls.__class__.__name__
 
 
 class ReceiverFactory(ABC):
@@ -121,3 +105,17 @@ class ReceiverFactory(ABC):
     @abstractmethod
     def create_receiver(self, *args, **kwargs):
         pass
+
+    @classmethod
+    def name(cls) -> str:
+        """
+        The name of the receiver factory.
+        """
+        return cls.__class__.__name__
+
+    @classmethod
+    def is_api(cls) -> bool:
+        """
+        Check if the receiver factory is to create an API receiver.
+        """
+        return False
