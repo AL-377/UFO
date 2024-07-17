@@ -9,6 +9,7 @@ from typing import Dict, List
 import psutil
 from pywinauto import Desktop
 from pywinauto.controls.uiawrapper import UIAWrapper
+import uiautomation as auto
 
 from ufo.config.config import Config
 
@@ -368,7 +369,25 @@ class ControlInspectorFacade:
             control_info["label"] = key
             control_info_list.append(control_info)
         return control_info_list
-
+    @staticmethod
+    def get_check_state(control_item: auto.Control) -> bool | None:
+        """
+        get the check state of the control item
+        param control_item: the control item to get the check state
+        return: the check state of the control item
+        """
+        is_checked = None
+        is_selected = None
+        try:
+            assert isinstance(control_item, auto.Control), f'{control_item =} is not a Control'
+            is_checked = control_item.GetLegacyIAccessiblePattern().State & auto.AccessibleState.Checked == auto.AccessibleState.Checked
+            is_selected = control_item.GetLegacyIAccessiblePattern().State & auto.AccessibleState.Selected == auto.AccessibleState.Selected
+            return is_checked or is_selected
+        except Exception as e:
+            print(f'item {control_item} not available for check state.')
+            print(e)
+            return None
+    
     @staticmethod
     def get_control_info(
         window: UIAWrapper, field_list: List[str] = []
@@ -388,6 +407,7 @@ class ControlInspectorFacade:
             control_info["control_rect"] = window.element_info.rectangle
             control_info["control_text"] = window.element_info.name
             control_info["control_title"] = window.window_text()
+            control_info["selected"] = ControlInspectorFacade.get_check_state(window)
         except:
             return {}
 

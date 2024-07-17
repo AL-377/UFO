@@ -14,7 +14,7 @@ class BaseService(abc.ABC):
         pass
 
     @staticmethod
-    def get_service(name):
+    def get_service(name,model_name=None):
         service_map = {
             "openai": "OpenAIService",
             "aoai": "OpenAIService",
@@ -23,16 +23,28 @@ class BaseService(abc.ABC):
             "ollama": "OllamaService",
             "gemini": "GeminiService",
             "placeholder": "PlaceHolderService",
+            "lam":"LAMService",
+        }
+        custom_service_map = {
+            'llava': 'LlavaService'
         }
         service_name = service_map.get(name, None)
         if service_name:
-            if name in ["aoai", "azure_ad"]:
-                module = import_module(".openai", package="ufo.llm")
+            if name in ['aoai', 'azure_ad']:
+                module = import_module('.openai', package='ufo.llm')
+            elif service_name == 'CustomService':
+                custom_model = 'llava' if 'llava' in model_name else model_name
+                custom_service_name = custom_service_map.get('llava' if 'llava' in custom_model else custom_model, None)
+                if custom_service_name:
+                    module = import_module('.'+custom_model, package='ufo.llm')
+                    service_name = custom_service_name
+                else:
+                    raise ValueError(f'Custom model {custom_model} not supported')
             else:
-                module = import_module("." + name.lower(), package="ufo.llm")
+                module = import_module('.'+name.lower(), package='ufo.llm')
+            return getattr(module, service_name)
         else:
             raise ValueError(f"Service {name} not found.")
-        return getattr(module, service_name)
 
     def get_cost_estimator(
         self, api_type, model, prices, prompt_tokens, completion_tokens

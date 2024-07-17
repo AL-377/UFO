@@ -179,17 +179,36 @@ class AppAgentProcessor(BaseProcessor):
         # Get the control information for the control items and the filtered control items, in a format of list of dictionaries.
         self._control_info = self.control_inspector.get_control_info_list_of_dict(
             self._annotation_dict,
-            ["control_text", "control_type" if BACKEND == "uia" else "control_class"],
+            ["control_text", "control_type" if BACKEND == "uia" else "control_class","selected"],
         )
+        self._control_info["text"] = self._control_info["control_text"]
+        del self._control_info["control_text"]
+
+        if BACKEND == "uia":
+            self._control_info["type"] = self._control_info["control_type"]
+            del self._control_info["control_type"]
+        else:
+            self._control_info["type"] = self._control_info["control_class"]
+            del self._control_info["control_class"]
+        
         self.filtered_control_info = (
             self.control_inspector.get_control_info_list_of_dict(
                 self.filtered_annotation_dict,
                 [
                     "control_text",
                     "control_type" if BACKEND == "uia" else "control_class",
+                    "selected"
                 ],
             )
         )
+        self.filtered_control_info["text"] = self.filtered_control_info["control_text"]
+        del self.filtered_control_info["control_text"]
+        if BACKEND == "uia":
+            self.filtered_control_info["type"] = self.filtered_control_info["control_type"]
+            del self.filtered_control_info["control_type"]
+        else:
+            self.filtered_control_info["type"] = self.filtered_control_info["control_class"]
+            del self.filtered_control_info["control_class"]
 
     def get_prompt_message(self) -> None:
         """

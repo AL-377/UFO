@@ -3,7 +3,7 @@ MAX_STEP: 100  # The max step limit for completing the user request
 SLEEP_TIME: 5  # The sleep time between each step to wait for the window to be ready
 RECTANGLE_TIME: 1
 
-SAFE_GUARD: True  # Whether to use the safe guard to prevent the model from doing sensitve operations.
+SAFE_GUARD: False  # Whether to use the safe guard to prevent the model from doing sensitve operations.
 CONTROL_LIST: ["Button", "Edit", "TabItem", "Document", "ListItem", "MenuItem", "ScrollBar", "TreeItem", "Hyperlink", "ComboBox", "RadioButton", "DataItem"] 
 # The list of widgets that allowed to be selected, in uia backend, it will be used for filter the control_type, while in win32 backend, it will be used for filter the class_name.
 HISTORY_KEYS: ["Step", "Thought", "ControlText", "Subtask", "Action", "Comment", "Results", "UserConfirm"]  # The keys of the action history for the next step.
@@ -76,11 +76,11 @@ CONTROL_FILTER_MODEL_ICON_NAME: "clip-ViT-B-32"  # The control filter model name
 
 ALLOW_OPENAPP: FALSE  # Whether to allow the open app action
 LOG_XML: False  # Whether to log the xml file for the at every step.
-SCREENSHOT_TO_MEMORY: True  # Whether to allow the screenshot to memory for the agent's decision making.
+SCREENSHOT_TO_MEMORY: False  # Whether to allow the screenshot to memory for the agent's decision making.
 
 
 # For customizations
-USE_CUSTOMIZATION: True  # Whether to use the customization
+USE_CUSTOMIZATION: False  # Whether to use the customization
 QA_PAIR_FILE: "customization/historical_qa.txt"  # The path for the historical QA
 QA_PAIR_NUM: 20  # The number of QA pairs for the customization
 
