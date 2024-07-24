@@ -100,17 +100,16 @@ class LAMService(BaseService):
         Raises:
             Exception: If the API request fails with a non-200 status code.
         """
-        api_endpoint = "/deployments/checkpoint-4-60/completion"
+        api_endpoint = "deployments/checkpoint-4-60/completion"
         payload = {
-            "question": self._process_messages(messages),
+            "question": json.dumps(self._process_messages(messages)),
         }
-
         resp = self._request_api(api_endpoint, payload)
         if resp.status_code != 200:
             raise Exception(
                 f"Failed to get completion with error code {resp.status_code}: {resp.text}",
             )
-        response: str = resp.json()["message"]["content"]
+        response: str = resp.json()["answer"]
 
         return response
 
@@ -150,22 +149,20 @@ class LAMService(BaseService):
         Returns:
             list: The processed messages with modified content and images.
         """
-        _messages = copy.deepcopy(messages)
-        tmp_image_text = tmp_image = None
-        for i, message in enumerate(_messages):
-            if isinstance(message["content"], list):
-                for j, content in enumerate(message["content"]):
-                    if content["type"] == "text":
-                        tmp_text = content.get("text")
-                    elif content["type"] == "image_url":
-                        tmp_image = content.get("image_url")["url"].split("base64,")[1]
-                        tmp_image_text = tmp_text
-                message["content"] = (
-                    tmp_text
-                    + "And the image is the screenshot from windows,"
-                    + tmp_image_text[:-1]
-                )
-                message["images"] = [self.resize_base64_image(tmp_image)]
+
+        _messages = {}
+        # tmp_image_text = tmp_image = None
+        for i, message in enumerate(messages):
+            if message["role"] == "system":
+                print(f"SYSTEM MESSAGE:{message}")
+                _messages["system"] = message["content"]
+            elif message["role"] == "user":
+                print(f"USER MESSAGE:{message}")
+                if isinstance(message["content"], list):
+                    _messages["user"] = message["content"][0]['text']
+                elif isinstance(message["content"], str):
+                    _messages["user"] = message["content"]
+                # Process the user message content.
         return _messages
 
     def _request_api(self, api_path: str, payload: Any, stream: bool = False):

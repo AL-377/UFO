@@ -83,6 +83,24 @@ class AppAgent(BasicAgent):
             is_visual, main_prompt, example_prompt, api_prompt, app_root_name
         )
 
+    def lam_message_constructor(
+        self,
+        control_info: str,
+        request: str,
+        prev_steps: List[dict]
+    ) -> List[Dict[str, Union[str, List[Dict[str, str]]]]]:
+        appagent_prompt_system_message = self.prompter.lam_system_content_construction()
+        appagent_prompt_user_message = self.prompter.lam_user_content_construction(
+            control_item=control_info,
+            user_request=request,
+            prev_steps=prev_steps
+        )
+        appagent_prompt_message = self.prompter.prompt_construction(
+        appagent_prompt_system_message, appagent_prompt_user_message
+        )
+
+        return appagent_prompt_message
+
     def message_constructor(
         self,
         dynamic_examples: str,
