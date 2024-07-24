@@ -384,8 +384,8 @@ class ControlInspectorFacade:
             is_selected = control_item.GetLegacyIAccessiblePattern().State & auto.AccessibleState.Selected == auto.AccessibleState.Selected
             return is_checked or is_selected
         except Exception as e:
-            print(f'item {control_item} not available for check state.')
-            print(e)
+            # print(f'item {control_item} not available for check state.')
+            # print(e)
             return None
     
     @staticmethod
