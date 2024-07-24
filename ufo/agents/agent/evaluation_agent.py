@@ -100,7 +100,7 @@ class EvaluationAgent(BasicAgent):
 
         message = self.message_constructor(log_path=log_path, request=request)
         result, cost = self.get_response(
-            message=message, namescope="app", use_backup_engine=True
+            message=message, namescope="hostagent", use_backup_engine=True
         )
 
         result = json_parser(result)

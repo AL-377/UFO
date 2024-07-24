@@ -165,25 +165,20 @@ class AppAgent(BasicAgent):
         :param response_dict: The response dictionary to print.
         """
 
-        control_text = response_dict.get("ControlText")
-        control_label = response_dict.get("ControlLabel")
+        control_text = response_dict.get("control_name")
+        control_label = response_dict.get("control_label")
         if not control_text and not control_label:
             control_text = "[No control selected.]"
             control_label = "[No control label selected.]"
-        observation = response_dict.get("Observation")
-        thought = response_dict.get("Thought")
-        plan = response_dict.get("Plan")
-        status = response_dict.get("Status")
-        comment = response_dict.get("Comment")
-        function_call = response_dict.get("Function")
-        args = utils.revise_line_breaks(response_dict.get("Args"))
+        thought = response_dict.get("thought")
+        plan = response_dict.get("plan")
+        status = response_dict.get("status")
+        function_call = response_dict.get("function")
+        args = utils.revise_line_breaks(response_dict.get("args"))
 
         # Generate the function call string
         action = self.Puppeteer.get_command_string(function_call, args)
 
-        utils.print_with_color(
-            "Observations👀: {observation}".format(observation=observation), "cyan"
-        )
         utils.print_with_color("Thoughts💡: {thought}".format(thought=thought), "green")
         utils.print_with_color(
             "Selected item🕹️: {control_text}, Label: {label}".format(
@@ -196,9 +191,8 @@ class AppAgent(BasicAgent):
         )
         utils.print_with_color("Status📊: {status}".format(status=status), "blue")
         utils.print_with_color(
-            "Next Plan📚: {plan}".format(plan="\n".join(plan)), "cyan"
+            "Next Plan📚: {plan}".format(plan=plan), "cyan"
         )
-        utils.print_with_color("Comment💬: {comment}".format(comment=comment), "green")
 
         screenshot_saving = response_dict.get("SaveScreenshot", {})
 

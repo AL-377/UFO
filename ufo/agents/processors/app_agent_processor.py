@@ -281,7 +281,6 @@ class AppAgentProcessor(BaseProcessor):
             self._response, self.cost = self.app_agent.get_response(
                 self._prompt_message, "APPAGENT", use_backup_engine=True
             )
-
         except Exception:
             self.llm_error_handler()
             return

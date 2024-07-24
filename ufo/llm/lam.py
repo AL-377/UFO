@@ -104,7 +104,9 @@ class LAMService(BaseService):
         payload = {
             "question": json.dumps(self._process_messages(messages)),
         }
+        print("PAYLOAD:", payload)
         resp = self._request_api(api_endpoint, payload)
+        print("RESPONSE:", json.dumps(resp.json()))
         if resp.status_code != 200:
             raise Exception(
                 f"Failed to get completion with error code {resp.status_code}: {resp.text}",
@@ -154,10 +156,10 @@ class LAMService(BaseService):
         # tmp_image_text = tmp_image = None
         for i, message in enumerate(messages):
             if message["role"] == "system":
-                print(f"SYSTEM MESSAGE:{message}")
+                # print(f"SYSTEM MESSAGE:{message}")
                 _messages["system"] = message["content"]
             elif message["role"] == "user":
-                print(f"USER MESSAGE:{message}")
+                # print(f"USER MESSAGE:{message}")
                 if isinstance(message["content"], list):
                     _messages["user"] = message["content"][0]['text']
                 elif isinstance(message["content"], str):
