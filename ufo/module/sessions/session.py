@@ -2,7 +2,10 @@
 # Licensed under the MIT License.
 
 import os
+import time
 from typing import List
+from ufo.automator.ui_control.inspector import ControlInspectorFacade
+import win32com.client
 
 from ufo import utils
 from ufo.agents.states.app_agent_state import ContinueAppAgentState
@@ -38,6 +41,13 @@ class SessionFactory:
                 return [
                     FollowerSession(task, plan, configs.get("EVA_SESSION", False), id=0)
                 ]
+        elif mode == "batch_normal":
+            if self.is_folder(plan):
+                return self.create_batch_session_in_batch(task, plan)
+            else:
+                return [
+                    BatchSession(task, plan, configs.get("EVA_SESSION", False), id=0)
+                ]
         else:
             raise ValueError(f"The {mode} mode is not supported.")
 
@@ -64,6 +74,31 @@ class SessionFactory:
 
         return sessions
 
+
+    def create_batch_session_in_batch(
+        self, task: str, plan: str
+    ) -> List[BaseSession]:
+        """
+        Create a follower session.
+        :param task: The name of current task.
+        :param plan: The path folder of all plan files.
+        :return: The list of created follower sessions.
+        """
+        plan_files = self.get_plan_files(plan)
+        file_names = [self.get_file_name_without_extension(f) for f in plan_files]
+        sessions = [
+            BatchSession(
+                f"{task}/{file_name}",
+                plan_file,
+                configs.get("EVA_SESSION", False),
+                id=i,
+            )
+            for i, (file_name, plan_file) in enumerate(zip(file_names, plan_files))
+        ]
+
+        return sessions
+
+    
     @staticmethod
     def is_folder(path: str) -> bool:
         """
@@ -102,8 +137,8 @@ class Session(BaseSession):
         """
         super().run()
         # Save the experience if the user asks so.
-        if interactor.experience_asker():
-            self.experience_saver()
+        # if interactor.experience_asker():
+        #     self.experience_saver()
 
     def _init_context(self) -> None:
         """
@@ -147,13 +182,14 @@ class Session(BaseSession):
         """
 
         if self.total_rounds == 0:
-            utils.print_with_color(interactor.WELCOME_TEXT, "cyan")
+            # utils.print_with_color(interactor.WELCOME_TEXT, "cyan")
             return interactor.first_request()
         else:
-            request, iscomplete = interactor.new_request()
-            if iscomplete:
-                self._finish = True
-            return request
+            # request, iscomplete = interactor.new_request()
+            # print(request)
+            # if iscomplete:
+            self._finish = True
+            return 'N'
 
     def request_to_evaluate(self) -> bool:
         """
@@ -163,6 +199,29 @@ class Session(BaseSession):
         request_memory = self._host_agent.blackboard.requests
         return request_memory.to_json()
 
+    def quit(self):
+        try:
+            control_inspector = ControlInspectorFacade("uia")
+            control_list = control_inspector.find_control_elements_in_descendants(self.application_window)
+            for control_item in control_list:
+                try:
+                    if control_item.friendly_class_name() == "Dialog" and control_item.window_text() not in  ["Navigation","Help","Editor","Accessibility","Styles"]:
+                        print(f"finding dialog {control_item.window_text()}")
+                        control_item.close()
+                    # if self._context.get(ContextNames..APPLICATION_ROOT_NAME) == 'WINWORD.EXE':
+                        # self.app_instance = win32com.client.gencache.EnsureDispatch(self.app_root_name)
+                        # file_path = self.context.get("FILE_PATH", r"C:\Users\ufo\Documents\test.docx")
+                        # self.file_instance = self.app_instance.Documents.Open(file_path)                   
+                except Exception as e:
+                    print(f"Failed to close dialog: {e}")
+            self.client = win32com.client.Dispatch("Word.Application")
+            for doc in self.client.Documents:
+                doc.Close(False)  # Argument False indicates not to save changes
+            self.application_window.close()
+        except Exception as e:
+            print('Error while closing word:', e)
+        finally:
+            time.sleep(configs["SLEEP_TIME"])
 
 class FollowerSession(BaseSession):
     """
@@ -253,3 +312,117 @@ class FollowerSession(BaseSession):
         """
 
         return self.plan_reader.get_task()
+
+
+class BatchSession(BaseSession):
+    """
+    A session for UFO.
+    """
+    def __init__(
+        self, task: str, plan_file: str, should_evaluate: bool, id: int
+    ) -> None:
+        """
+        Initialize a session.
+        :param task: The name of current task.
+        :param plan_file: The path of the plan file to follow.
+        :param should_evaluate: Whether to evaluate the session.
+        :param id: The id of the session.
+        """
+
+        super().__init__(task, should_evaluate, id)
+
+        self.plan_reader = PlanReader(plan_file)
+    
+    
+    def run(self) -> None:
+        """
+        Run the session.
+        """
+        super().run()
+        # Save the experience if the user asks so.
+        # if interactor.experience_asker():
+        #     self.experience_saver()
+
+    def _init_context(self) -> None:
+        """
+        Initialize the context.
+        """
+        super()._init_context()
+
+        self.context.set(ContextNames.MODE, "batch_normal")
+
+    def create_new_round(self) -> None:
+        """
+        Create a new round.
+        """
+
+        # Get a request for the new round.
+        request = self.next_request()
+        print(request)
+
+        # Create a new round and return None if the session is finished.
+
+        if self.is_finished():
+            return None
+
+        self._host_agent.set_state(ContinueHostAgentState())
+
+        round = BaseRound(
+            request=request,
+            agent=self._host_agent,
+            context=self.context,
+            should_evaluate=configs.get("EVA_ROUND", False),
+            id=self.total_rounds,
+        )
+
+        self.add_round(round.id, round)
+
+        return round
+
+    def next_request(self) -> str:
+        """
+        Get the request for the host agent.
+        :return: The request for the host agent.
+        """
+
+        if self.total_rounds == 0:
+            # utils.print_with_color(interactor.WELCOME_TEXT, "cyan")
+            return self.plan_reader.get_host_request()
+        else:
+            # request, iscomplete = interactor.new_request()
+            # print(request)
+            # if iscomplete:
+            self._finish = True
+            return 'N'
+
+    def request_to_evaluate(self) -> bool:
+        """
+        Check if the session should be evaluated.
+        :return: True if the session should be evaluated, False otherwise.
+        """
+        request_memory = self._host_agent.blackboard.requests
+        return request_memory.to_json()
+
+    def quit(self):
+        try:
+            control_inspector = ControlInspectorFacade("uia")
+            control_list = control_inspector.find_control_elements_in_descendants(self.application_window)
+            for control_item in control_list:
+                try:
+                    if control_item.friendly_class_name() == "Dialog" and control_item.window_text() not in  ["Navigation","Help","Editor","Accessibility","Styles"]:
+                        print(f"finding dialog {control_item.window_text()}")
+                        control_item.close()
+                    # if self._context.get(ContextNames..APPLICATION_ROOT_NAME) == 'WINWORD.EXE':
+                        # self.app_instance = win32com.client.gencache.EnsureDispatch(self.app_root_name)
+                        # file_path = self.context.get("FILE_PATH", r"C:\Users\ufo\Documents\test.docx")
+                        # self.file_instance = self.app_instance.Documents.Open(file_path)                   
+                except Exception as e:
+                    print(f"Failed to close dialog: {e}")
+            self.client = win32com.client.Dispatch("Word.Application")
+            for doc in self.client.Documents:
+                doc.Close(False)  # Argument False indicates not to save changes
+            self.application_window.close()
+        except Exception as e:
+            print('Error while closing word:', e)
+        finally:
+            time.sleep(configs["SLEEP_TIME"])
