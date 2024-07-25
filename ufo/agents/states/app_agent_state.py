@@ -151,7 +151,8 @@ class FinishAppAgentState(AppAgentState):
         from ufo.agents.agent.follower_agent import FollowerAgent
 
         if type(agent) == AppAgent:
-            return ContinueHostAgentState()
+            # return ContinueHostAgentState()
+            return FinishHostAgentState()
         elif type(agent) == FollowerAgent:
             return FinishHostAgentState()
         else:

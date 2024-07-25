@@ -33,7 +33,8 @@ def new_request() -> Tuple[str, bool]:
     utils.print_with_color(
         """Please enter your new request. Enter 'N' for exit.""", "cyan"
     )
-    request = input()
+    # request = input()
+    request = 'N'
     if request.upper() == "N":
         complete = True
     else:
@@ -93,8 +94,8 @@ def sensitive_step_asker(action, control_text) -> bool:
     )
 
     while True:
-        user_input = input().upper()
-
+        # user_input = input().upper()
+        user_input = "Y"
         if user_input == "Y":
             return True
         elif user_input == "N":

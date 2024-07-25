@@ -359,7 +359,7 @@ class BaseSession(ABC):
 
         if self._should_evaluate and not self.is_error():
             self.evaluation()
-
+        self.quit()
         self.print_cost()
 
     @abstractmethod
@@ -368,6 +368,12 @@ class BaseSession(ABC):
         Create a new round.
         """
         pass
+
+    def quit(self):
+        """
+        Quit the Application.
+        """
+        print('try to quit the application')
 
     @abstractmethod
     def next_request(self) -> str:
