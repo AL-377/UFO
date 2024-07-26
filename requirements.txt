@@ -23,3 +23,9 @@ html2text==2024.2.26
 ##For Gemini
 #google-generativeai==0.7.0
 
+uiautomation==2.0.20
+fpdf2
+markdown
+fonttools
+defusedxml
+docx2pdf 
