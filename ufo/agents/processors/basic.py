@@ -73,8 +73,13 @@ class BaseProcessor(ABC):
         10. Update the step and status.
         11. Update the step.
         """
+
+        step_time_cnts = {
+            "agent_name": self.__class__.__name__
+        }
         def log_time(step_name: str, start_time: float, end_time: float) -> None:
             print(f"{step_name} took {end_time - start_time:.4f} seconds")
+            step_time_cnts[step_name] = end_time - start_time
 
         # Step 1: Print the step information.
         start_time = time.time()
@@ -159,6 +164,10 @@ class BaseProcessor(ABC):
         self.update_step()
         end_time = time.time()
         log_time("Update step", start_time, end_time)
+
+        # log the time consume
+        self.log(step_time_cnts)
+
 
     def resume(self) -> None:
         """
