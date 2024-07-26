@@ -87,13 +87,13 @@ class AppAgent(BasicAgent):
         self,
         control_info: str,
         request: str,
-        prev_steps: List[dict]
+        **args
     ) -> List[Dict[str, Union[str, List[Dict[str, str]]]]]:
         appagent_prompt_system_message = self.prompter.lam_system_content_construction()
         appagent_prompt_user_message = self.prompter.lam_user_content_construction(
             control_item=control_info,
             user_request=request,
-            prev_steps=prev_steps
+            **args
         )
         appagent_prompt_message = self.prompter.prompt_construction(
         appagent_prompt_system_message, appagent_prompt_user_message
