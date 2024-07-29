@@ -100,7 +100,7 @@ class LAMService(BaseService):
         Raises:
             Exception: If the API request fails with a non-200 status code.
         """
-        api_endpoint = "deployments/checkpoint-0725/completion"
+        api_endpoint = "deployments/checkpoint-0725-guff/completion"
         payload = {
             "question": json.dumps(self._process_messages(messages)),
         }
