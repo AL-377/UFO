@@ -215,7 +215,10 @@ class AppAgentPrompter(BasicPrompter):
         :param api_prompt_template: The path of the api prompt template.
         :param root_name: The root name of the app.
         """
-        super().__init__(is_visual, prompt_template, example_prompt_template)
+        version_prompt_template = prompt_template.format(
+                version=configs["LAM_TEMPLATE_VERSION"]
+            )
+        super().__init__(is_visual, version_prompt_template, example_prompt_template)
         self.root_name = root_name
         self.app_prompter = APIPromptLoader(self.root_name)
         self.api_prompt_template = self.load_prompt_template(api_prompt_template)
@@ -300,22 +303,30 @@ class AppAgentPrompter(BasicPrompter):
     def lam_user_prompt_construction(
         self,
         control_item: List[str],
-        prev_steps: List[dict],
-        user_request: str
+        user_request: str,
+        **args
     ):
-        prompt = self.prompt_template["user"].format(
-            control_item=json.dumps(control_item),
-            step_history=json.dumps(prev_steps),
-            user_request=user_request
-        )
+        if configs["LAM_TEMPLATE_VERSION"] == 4:
+            prompt = self.prompt_template["user"].format(
+                control_item=json.dumps(control_item),
+                user_request=user_request,
+                step_history=json.dumps(args.get("step_history", [])),
+            )
+        elif configs["LAM_TEMPLATE_VERSION"] == 2:
+            prompt = self.prompt_template["user"].format(
+                control_item=json.dumps(control_item),
+                user_request=user_request,
+                step_history=json.dumps(args.get("step_history", [])),
+                previous_plan = json.dumps(args.get("previous_plan",[]))
+            )
 
         return prompt
 
     def lam_user_content_construction(
         self,
         control_item: List[str],
-        prev_steps: List[dict],
-        user_request: str
+        user_request: str,
+        **args
     ):
         user_content = []
         user_content.append(
@@ -323,8 +334,8 @@ class AppAgentPrompter(BasicPrompter):
                 "type": "text",
                 "text": self.lam_user_prompt_construction(
                     control_item=control_item,
-                    prev_steps=prev_steps,
-                    user_request=user_request
+                    user_request=user_request,
+                    **args
                 ),
             }
         )

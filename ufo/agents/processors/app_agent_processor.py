@@ -240,29 +240,23 @@ class AppAgentProcessor(BaseProcessor):
             configs["RAG_ONLINE_RETRIEVED_TOPK"],
         )
 
-        # Construct the prompt message for the AppAgent.
-        # self._prompt_message = self.app_agent.message_constructor(
-        #     dynamic_examples=examples,
-        #     dynamic_tips=tips,
-        #     dynamic_knowledge=external_knowledge_prompt,
-        #     image_list=self._image_url,
-        #     control_info=self.filtered_control_info,
-        #     prev_subtask=self.previous_subtasks,
-        #     plan=self.prev_plan,
-        #     request=self.request,
-        #     subtask=self.subtask,
-        #     host_message=self.host_message,
-        #     include_last_screenshot=configs["INCLUDE_LAST_SCREENSHOT"],
-        # )
         if configs["LAM_TEMPLATE_VERSION"] == 4:
-            prev_steps = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("previous_steps", [])
+            step_history = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
             self._prompt_message = self.app_agent.lam_message_constructor(
                 control_info=self.filtered_control_info,
                 request=self.request,
-                prev_steps=prev_steps,
+                step_history=step_history,
             )
         elif configs["LAM_TEMPLATE_VERSION"] == 2:
-            pass
+            # "step" not the same with version 4
+            step_history = []  if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
+            previous_plan = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("previous_plan", [])
+            self._prompt_message = self.app_agent.lam_message_constructor(
+                control_info=self.filtered_control_info,
+                request=self.request,
+                step_history=step_history,
+                previous_plan=previous_plan
+            )
         # Log the prompt message. Only save them in debug mode.
         log = json.dumps(
             {
@@ -414,11 +408,12 @@ class AppAgentProcessor(BaseProcessor):
     
     def parse_lam_steps(self,response_json)->dict:
         """
-        Parse the steps in LAM for 'previous_steps'
+        Parse the steps in LAM for 'step_history'
         """
         step_json = {}
         step_json['action']={}
-        step_json["plan"] = response_json.get("thought", "")
+        if configs["LAM_TEMPLATE_VERSION"] == 4:
+            step_json["plan"] = response_json.get("thought", "")
         step_json['action']["control_name"] = response_json.get("control_name", "")
         step_json['action']['control_id'] = response_json.get("control_label","")
         step_json['action']['function'] = response_json.get("function","")
@@ -454,12 +449,19 @@ class AppAgentProcessor(BaseProcessor):
         }
 
         # merge the history response list
-        if self.app_agent.memory.get_latest_item():
-            prev_steps =  self.app_agent.memory.get_latest_item().to_dict().get("previou_steps", [])
-        else:
-            prev_steps = []
-        self._memory_data.set_values_from_dict({"previou_steps":    prev_steps + [self.parse_lam_steps(self._response_json)]})
-
+        if configs["LAM_TEMPLATE_VERSION"]==4:
+            if self.app_agent.memory.get_latest_item():
+                step_history =  self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
+            else:
+                step_history = []
+            self._memory_data.set_values_from_dict({"step_history": step_history + [self.parse_lam_steps(self._response_json)]})
+        elif configs["LAM_TEMPLATE_VERSION"]==2:
+            if self.app_agent.memory.get_latest_item():
+                step_history =  self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
+            else:
+                step_history = []
+            self._memory_data.set_values_from_dict({"step_history": step_history + [self.parse_lam_steps(self._response_json)]})
+            self._memory_data.set_values_from_dict({"previous_plan": self._response_json.get("plan",[])})
         self._memory_data.set_values_from_dict(self._response_json)
         self._memory_data.set_values_from_dict(additional_memory)
 

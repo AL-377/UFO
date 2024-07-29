@@ -5,12 +5,17 @@ import importlib
 import json
 import os
 from typing import Optional, Any, Dict
+import tiktoken
 
 from colorama import Fore, Style, init
 
 # init colorama
 init()
 
+def count_tokens(text, encoding_name="cl100k_base"):
+    enc = tiktoken.get_encoding(encoding_name)
+    tokens = enc.encode(text)
+    return len(tokens)
 
 def print_with_color(text: str, color: str = "", end: str = "\n") -> None:
     """
