@@ -88,3 +88,6 @@ QA_PAIR_NUM: 20  # The number of QA pairs for the customization
 EVA_SESSION: True  # Whether to include the session in the evaluation
 EVA_ROUND: FALSE
 EVA_ALL_SCREENSHOTS: True  # Whether to include all the screenshots in the evaluation
+
+# LAM template version choice
+LAM_TEMPLATE_VERSION: 4

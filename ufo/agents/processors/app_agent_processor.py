@@ -254,12 +254,15 @@ class AppAgentProcessor(BaseProcessor):
         #     host_message=self.host_message,
         #     include_last_screenshot=configs["INCLUDE_LAST_SCREENSHOT"],
         # )
-        prev_steps = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("previous_steps", [])
-        self._prompt_message = self.app_agent.lam_message_constructor(
-            control_info=self.filtered_control_info,
-            request=self.request,
-            prev_steps=prev_steps,
-        )
+        if configs["LAM_TEMPLATE_VERSION"] == 4:
+            prev_steps = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("previous_steps", [])
+            self._prompt_message = self.app_agent.lam_message_constructor(
+                control_info=self.filtered_control_info,
+                request=self.request,
+                prev_steps=prev_steps,
+            )
+        elif configs["LAM_TEMPLATE_VERSION"] == 2:
+            pass
         # Log the prompt message. Only save them in debug mode.
         log = json.dumps(
             {
