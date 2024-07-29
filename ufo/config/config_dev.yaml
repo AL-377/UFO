@@ -91,3 +91,6 @@ EVA_ALL_SCREENSHOTS: True  # Whether to include all the screenshots in the evalu
 
 # LAM template version choice
 LAM_TEMPLATE_VERSION: 2
+
+# LAM template version choice
+LAM_TEMPLATE_VERSION: 2
