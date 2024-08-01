@@ -81,7 +81,6 @@ class AppAgentProcessor(BaseProcessor):
         """
         Capture the screenshot.
         """
-
         # Define the paths for the screenshots saved.
         screenshot_save_path = self.log_path + f"action_step{self.session_step}.png"
         annotated_screenshot_save_path = (
@@ -103,25 +102,39 @@ class AppAgentProcessor(BaseProcessor):
         if type(self.control_reannotate) == list and len(self.control_reannotate) > 0:
             control_list = self.control_reannotate
         else:
+            start_time = time.time()
             control_list = self.control_inspector.find_control_elements_in_descendants(
                 self.application_window,
                 control_type_list=configs["CONTROL_LIST"],
                 class_name_list=configs["CONTROL_LIST"],
             )
+            end_time = time.time()
+            self.log_time("find_control_elements_in_descendants",start_time,end_time)
 
+        start_time = time.time()
         # Get the annotation dictionary for the control items, in a format of {control_label: control_element}.
         self._annotation_dict = self.photographer.get_annotation_dict(
             self.application_window, control_list, annotation_type="number"
         )
+        end_time = time.time()
+        self.log_time("get_annotation_dict",start_time,end_time)
 
+        start_time = time.time()
         # Attempt to filter out irrelevant control items based on the previous plan.
         self.filtered_annotation_dict = self.get_filtered_annotation_dict(
             self._annotation_dict
         )
+        end_time = time.time()
+        self.log_time("get_filtered_annotation_dict",start_time,end_time)
+
+        start_time = time.time()
         self.photographer.capture_app_window_screenshot(
             self.application_window, save_path=screenshot_save_path
         )
+        end_time = time.time()
+        self.log_time("capture_app_window_screenshot",start_time,end_time)
 
+        start_time = time.time()
         # Capture the screenshot of the selected control items with annotation and save it.
         self.photographer.capture_app_window_screenshot_with_annotation_dict(
             self.application_window,
@@ -129,7 +142,11 @@ class AppAgentProcessor(BaseProcessor):
             annotation_type="number",
             save_path=annotated_screenshot_save_path,
         )
+        end_time = time.time()
+        self.log_time("capture_app_window_screenshot_with_annotation_dict",start_time,end_time)
 
+
+        start_time = time.time()
         # If the configuration is set to include the last screenshot with selected controls tagged, save the last screenshot.
         if configs["INCLUDE_LAST_SCREENSHOT"]:
             last_screenshot_save_path = (
@@ -146,7 +163,10 @@ class AppAgentProcessor(BaseProcessor):
                     else last_screenshot_save_path
                 )
             ]
-
+        end_time = time.time()
+        self.log_time("INCLUDE_LAST_SCREENSHOT",start_time,end_time)
+        
+        start_time = time.time()
         # Whether to concatenate the screenshots of clean screenshot and annotated screenshot into one image.
         if configs["CONCAT_SCREENSHOT"]:
             self.photographer.concat_screenshots(
@@ -165,22 +185,30 @@ class AppAgentProcessor(BaseProcessor):
                 annotated_screenshot_save_path
             )
             self._image_url += [screenshot_url, screenshot_annotated_url]
+        end_time = time.time()
+        self.log_time("CONCAT_SCREENSHOT",start_time,end_time)
 
         # Save the XML file for the current state.
         if configs["LOG_XML"]:
-
+            start_time = time.time()
             self._save_to_xml()
+            end_time = time.time()
+            self.log_time("LOG_XML",start_time,end_time)
+        
 
     def get_control_info(self) -> None:
         """
         Get the control information.
         """
-
+        start_time = time.time()
         # Get the control information for the control items and the filtered control items, in a format of list of dictionaries.
         self._control_info = self.control_inspector.get_control_info_list_of_dict(
             self._annotation_dict,
             ["control_text", "control_type" if BACKEND == "uia" else "control_class","selected"],
         )
+        end_time = time.time()
+        self.log_time("get_control_info_list_of_dict", start_time, end_time)
+
         # print(f"Temp control info: {json.dumps(self._control_info)}")
         
         # modify the fields to align lam
@@ -199,7 +227,7 @@ class AppAgentProcessor(BaseProcessor):
 
         self._control_info = _fix_control_info
 
-
+        start_time = time.time()
         self.filtered_control_info = (
             self.control_inspector.get_control_info_list_of_dict(
                 self.filtered_annotation_dict,
@@ -210,6 +238,9 @@ class AppAgentProcessor(BaseProcessor):
                 ],
             )
         )
+        end_time = time.time()
+        self.log_time("filter get_control_info_list_of_dict", start_time, end_time)
+
         
         _fix_filtered_control_info = []
         for control_info in self.filtered_control_info:
@@ -386,7 +417,6 @@ class AppAgentProcessor(BaseProcessor):
         self._memory_data.set_values_from_dict(
             {"SelectedControlScreenshot": control_screenshot_save_path}
         )
-
         self.photographer.capture_app_window_screenshot_with_rectangle(
             self.application_window,
             sub_control_list=[control_selected],

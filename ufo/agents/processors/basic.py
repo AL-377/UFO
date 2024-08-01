@@ -56,6 +56,11 @@ class BaseProcessor(ABC):
         self._is_resumed = False
         self._action = None
         self._plan = None
+        self._step_time_cnts = {}
+
+    def log_time(self,step_name: str, start_time: float, end_time: float) -> None:
+        print(f"{step_name} took {end_time - start_time:.4f} seconds")
+        self._step_time_cnts[step_name] = end_time - start_time
 
     def process(self) -> None:
         """
@@ -74,42 +79,44 @@ class BaseProcessor(ABC):
         11. Update the step.
         """
 
-        step_time_cnts = {
+        self._step_time_cnts = {
             "agent_name": self.__class__.__name__
         }
-        def log_time(step_name: str, start_time: float, end_time: float) -> None:
-            print(f"{step_name} took {end_time - start_time:.4f} seconds")
-            step_time_cnts[step_name] = end_time - start_time
 
         # Step 1: Print the step information.
-        start_time = time.time()
         self.print_step_info()
-        end_time = time.time()
-        log_time("Print step information", start_time, end_time)
 
         # Step 2: Capture the screenshot.
         start_time = time.time()
+        start_keys = self._step_time_cnts.keys()
         self.capture_screenshot()
+        end_keys = self._step_time_cnts.keys()
+        capture_keys = [k for k in end_keys if k not in start_keys]
+        self._step_time_cnts["capture detail times"] = {k:v for k,v in self._step_time_cnts.items() if k in capture_keys}
         end_time = time.time()
-        log_time("Capture screenshot", start_time, end_time)
+        self.log_time("Capture screenshot", start_time, end_time)
 
         # Step 3: Get the control information.
         start_time = time.time()
+        start_keys = self._step_time_cnts.keys()
         self.get_control_info()
+        end_keys = self._step_time_cnts.keys()
+        control_keys = [k for k in end_keys if k not in start_keys]
+        self._step_time_cnts["control detail times"] = {k:v for k,v in self._step_time_cnts.items() if k in control_keys}
         end_time = time.time()
-        log_time("Get control information", start_time, end_time)
+        self.log_time("Get control information", start_time, end_time)
 
         # Step 4: Get the prompt message.
         start_time = time.time()
         self.get_prompt_message()
         end_time = time.time()
-        log_time("Get prompt message", start_time, end_time)
+        self.log_time("Get prompt message", start_time, end_time)
 
         # Step 5: Get the response.
         start_time = time.time()
         self.get_response()
         end_time = time.time()
-        log_time("Get response", start_time, end_time)
+        self.log_time("Get response", start_time, end_time)
 
         if self.is_error():
             return
@@ -118,13 +125,13 @@ class BaseProcessor(ABC):
         start_time = time.time()
         self.update_cost()
         end_time = time.time()
-        log_time("Update cost", start_time, end_time)
+        self.log_time("Update cost", start_time, end_time)
 
         # Step 7: Parse the response, if there is no error.
         start_time = time.time()
         self.parse_response()
         end_time = time.time()
-        log_time("Parse response", start_time, end_time)
+        self.log_time("Parse response", start_time, end_time)
 
         if self.is_error() or self.is_paused():
             # If the session is pending, update the step and memory, and return.
@@ -132,12 +139,12 @@ class BaseProcessor(ABC):
                 start_time = time.time()
                 self.update_step()
                 end_time = time.time()
-                log_time("Update step (pending)", start_time, end_time)
+                self.log_time("Update step (pending)", start_time, end_time)
 
                 start_time = time.time()
                 self.update_memory()
                 end_time = time.time()
-                log_time("Update memory (pending)", start_time, end_time)
+                self.log_time("Update memory (pending)", start_time, end_time)
 
             return
 
@@ -145,28 +152,28 @@ class BaseProcessor(ABC):
         start_time = time.time()
         self.execute_action()
         end_time = time.time()
-        log_time("Execute action", start_time, end_time)
+        self.log_time("Execute action", start_time, end_time)
 
         # Step 9: Update the memory.
         start_time = time.time()
         self.update_memory()
         end_time = time.time()
-        log_time("Update memory", start_time, end_time)
+        self.log_time("Update memory", start_time, end_time)
 
         # Step 10: Update the status.
         start_time = time.time()
         self.update_status()
         end_time = time.time()
-        log_time("Update status", start_time, end_time)
+        self.log_time("Update status", start_time, end_time)
 
         # Step 11: Update the context.
         start_time = time.time()
         self.update_step()
         end_time = time.time()
-        log_time("Update step", start_time, end_time)
+        self.log_time("Update step", start_time, end_time)
 
         # log the time consume
-        self.log(step_time_cnts)
+        self.log(self._step_time_cnts)
 
 
     def resume(self) -> None:
