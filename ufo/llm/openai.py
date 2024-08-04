@@ -234,6 +234,15 @@ class OpenAIService(BaseService):
                 result = None
             except Exception:
                 pass
+        
+        if result is None:
+            try:
+                result = app.acquire_token_interactive(scopes=scopes)
+                if result is not None and "access_token" in result:
+                    save_cache()
+                    return result["access_token"]
+            except Exception as e:
+                pass
 
         if result is None:
             print("no token available from cache, acquiring token from AAD")

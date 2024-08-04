@@ -19,6 +19,7 @@ class LAMService(BaseService):
         self.config = config
         self.max_retry = self.config["MAX_RETRY"]
         self.timeout = self.config["TIMEOUT"]
+        self.session = requests.Session()
 
     def chat_completion(
         self,
@@ -104,9 +105,9 @@ class LAMService(BaseService):
         payload = {
             "question": json.dumps(self._process_messages(messages)),
         }
-        print("PAYLOAD:", payload)
+        # print("PAYLOAD:", payload)
         resp = self._request_api(api_endpoint, payload)
-        print("RESPONSE:", json.dumps(resp.json()))
+        # print("RESPONSE:", json.dumps(resp.json()))
         if resp.status_code != 200:
             raise Exception(
                 f"Failed to get completion with error code {resp.status_code}: {resp.text}",
@@ -180,7 +181,7 @@ class LAMService(BaseService):
             Response: The response object returned by the API.
         """
         url = f"{self.config_llm['API_BASE']}{api_path}"
-        response = requests.post(
+        response = self.session.post(
             url=url, json=payload, timeout=self.timeout, stream=stream
         )
         return response

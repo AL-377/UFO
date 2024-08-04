@@ -38,3 +38,5 @@ scripts/*
 tasks/
 
 sample
+
+venv

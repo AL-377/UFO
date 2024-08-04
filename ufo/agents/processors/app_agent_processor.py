@@ -201,10 +201,11 @@ class AppAgentProcessor(BaseProcessor):
         Get the control information.
         """
         start_time = time.time()
+        control_type_field_name = "control_type" if BACKEND == "uia" else "control_class"
         # Get the control information for the control items and the filtered control items, in a format of list of dictionaries.
         self._control_info = self.control_inspector.get_control_info_list_of_dict(
             self._annotation_dict,
-            ["control_text", "control_type" if BACKEND == "uia" else "control_class","selected"],
+            ["control_text", control_type_field_name,"selected"],
         )
         end_time = time.time()
         self.log_time("get_control_info_list_of_dict", start_time, end_time)
@@ -217,12 +218,8 @@ class AppAgentProcessor(BaseProcessor):
             control_info["text"] = control_info["control_text"]
             del control_info["control_text"]
 
-            if BACKEND == "uia":
-                control_info["type"] = control_info["control_type"]
-                del control_info["control_type"]
-            else:
-                control_info["type"] = control_info["control_class"]
-                del control_info["control_class"]
+            control_info["type"] = control_info[control_type_field_name]
+            del control_info[control_type_field_name]
             _fix_control_info.append(control_info)
 
         self._control_info = _fix_control_info
@@ -233,7 +230,7 @@ class AppAgentProcessor(BaseProcessor):
                 self.filtered_annotation_dict,
                 [
                     "control_text",
-                    "control_type" if BACKEND == "uia" else "control_class",
+                    control_type_field_name,
                     "selected"
                 ],
             )
@@ -247,12 +244,8 @@ class AppAgentProcessor(BaseProcessor):
 
             control_info["text"] = control_info["control_text"]
             del control_info["control_text"]
-            if BACKEND == "uia":
-                control_info["type"] = control_info["control_type"]
-                del control_info["control_type"]
-            else:
-                control_info["type"] = control_info["control_class"]
-                del control_info["control_class"]
+            control_info["type"] = control_info[control_type_field_name]
+            del control_info[control_type_field_name]
             _fix_filtered_control_info.append(control_info)
 
         self.filtered_control_info = _fix_filtered_control_info
@@ -379,7 +372,7 @@ class AppAgentProcessor(BaseProcessor):
             # The LLM response is a number index corresponding to the key in the annotation dictionary.
             control_selected = self._annotation_dict.get(self._control_label, "")
 
-            if control_selected:
+            if configs.get("SHOW_VISUAL_OUTLINE_ON_SCREEN", True) and control_selected:
                 control_selected.draw_outline(colour="red", thickness=3)
                 time.sleep(configs.get("RECTANGLE_TIME", 0))
 

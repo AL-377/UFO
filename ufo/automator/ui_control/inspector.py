@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Callable, cast, Dict, List
 
 import psutil
+import pywinauto
 from pywinauto import Desktop
 from pywinauto.controls.uiawrapper import UIAWrapper
+from pywinauto.uia_element_info import UIAElementInfo
 import uiautomation as auto
 
 from ufo.config.config import Config
@@ -88,7 +90,13 @@ class UIABackendStrategy(BackendStrategy):
         :param remove_empty: Whether to remove empty titles.
         :return: The apps on the desktop.
         """
-        desktop_windows = Desktop(backend="uia").windows()
+
+        # UIA Com API would incur severe performance occasionally (such as a new app just started)
+        # so we use Win32 to acquire the handle and then convert it to UIA interface
+
+        desktop_windows = Desktop(backend="win32").windows()
+        desktop_windows = [app for app in desktop_windows if app.is_visible()]
+
         if remove_empty:
             desktop_windows = [
                 app
@@ -96,7 +104,15 @@ class UIABackendStrategy(BackendStrategy):
                 if app.window_text() != ""
                 and app.element_info.class_name not in ["IME", "MSCTFIME UI"]
             ]
-        return desktop_windows
+
+        uia_desktop_windows: List[UIAWrapper] = [
+            UIAWrapper(
+                UIAElementInfo(
+                    handle_or_elem=window.handle
+                )
+            ) for window in desktop_windows
+        ]
+        return uia_desktop_windows
 
     def find_control_elements_in_descendants(
         self,
@@ -120,44 +136,62 @@ class UIABackendStrategy(BackendStrategy):
         :return: The control elements found.
         """
 
-        if window == None:
+        if window is None:
             return []
+        
+        assert class_name_list is None or len(class_name_list) == 0, "class_name_list is not supported for UIA backend"
 
-        control_elements = []
-        if len(control_type_list) == 0:
-            control_elements += window.descendants()
-        else:
-            for control_type in control_type_list:
-                if depth == 0:
-                    subcontrols = window.descendants(control_type=control_type)
-                else:
-                    subcontrols = window.descendants(
-                        control_type=control_type, depth=depth
-                    )
-                control_elements += subcontrols
-
-        if is_visible:
-            control_elements = [
-                control for control in control_elements if control.is_visible()
-            ]
-        if is_enabled:
-            control_elements = [
-                control for control in control_elements if control.is_enabled()
-            ]
-        if len(title_list) > 0:
-            control_elements = [
-                control
-                for control in control_elements
-                if control.window_text() in title_list
-            ]
-        if len(class_name_list) > 0:
-            control_elements = [
-                control
-                for control in control_elements
-                if control.element_info.class_name in class_name_list
-            ]
-
-        return control_elements
+        window_elem_info = cast(UIAElementInfo, window.element_info)
+        
+        iuia = pywinauto.uia_defines.IUIA()
+        cond = iuia.iuia.CreateAndConditionFromArray([
+            iuia.iuia.CreatePropertyCondition(
+                iuia.UIA_dll.UIA_IsEnabledPropertyId, is_enabled
+            ),
+            iuia.iuia.CreatePropertyCondition(
+                # visibility is determined by IsOffscreen property
+                iuia.UIA_dll.UIA_IsOffscreenPropertyId, not is_visible
+            ),
+            iuia.iuia.CreateOrConditionFromArray([
+                iuia.iuia.CreatePropertyCondition(
+                    iuia.UIA_dll.UIA_ControlTypePropertyId, 
+                    control_type if control_type is int 
+                    else iuia.known_control_types[control_type]
+                )
+                for control_type in control_type_list
+            ]),
+        ])
+        control_elements = window_elem_info._get_elements(
+            tree_scope=iuia.tree_scope["descendants"],
+            cond = cond,
+            # enable caching for performance on later property lookup
+            cache_enable=True,
+        )
+        
+        def perf_fix(element_info: UIAElementInfo) -> UIAElementInfo:
+            # handle is not needed, skip fetching
+            element_info._cached_handle = 0
+            
+            # rect is frequently used, cache it
+            element_info._cached_rect = None
+            def _get_rectangle(self) -> tuple[int, int, int, int]:
+                if self._cached_rect is None:
+                    bound_rect = self._element.CurrentBoundingRectangle
+                    rect = pywinauto.win32structures.RECT()
+                    rect.left = bound_rect.left
+                    rect.top = bound_rect.top
+                    rect.right = bound_rect.right
+                    rect.bottom = bound_rect.bottom
+                    self._cached_rect = rect
+                return self._cached_rect
+            element_info._get_rectangle = _get_rectangle
+            return element_info
+        
+        
+        return [
+            UIAWrapper(perf_fix(element_info))
+            for element_info in control_elements
+        ]
 
 
 class Win32BackendStrategy(BackendStrategy):
@@ -381,8 +415,12 @@ class ControlInspectorFacade:
         try:
             assert isinstance(control_item, auto.Control), f'{control_item =} is not a Control'
             is_checked = control_item.GetLegacyIAccessiblePattern().State & auto.AccessibleState.Checked == auto.AccessibleState.Checked
+            if is_checked:
+                return is_checked
             is_selected = control_item.GetLegacyIAccessiblePattern().State & auto.AccessibleState.Selected == auto.AccessibleState.Selected
-            return is_checked or is_selected
+            if is_selected:
+                return is_selected
+            return None
         except Exception as e:
             # print(f'item {control_item} not available for check state.')
             # print(e)
@@ -398,22 +436,25 @@ class ControlInspectorFacade:
         :param field_list: The fields to get.
         return: The control info of the window.
         """
-        control_info = {}
+        control_info: Dict[str, str] = {}
+
+        def assign(prop_name: str, prop_value_func: Callable[[], str]) -> None:
+            if len(field_list) > 0 and prop_name not in field_list:
+                return
+            control_info[prop_name] = prop_value_func()
+            
         try:
-            control_info["control_type"] = window.element_info.control_type
-            control_info["control_id"] = window.element_info.control_id
-            control_info["control_class"] = window.element_info.class_name
-            control_info["control_name"] = window.element_info.name
-            control_info["control_rect"] = window.element_info.rectangle
-            control_info["control_text"] = window.element_info.name
-            control_info["control_title"] = window.window_text()
-            control_info["selected"] = ControlInspectorFacade.get_check_state(window)
+            assign("control_type", lambda: window.element_info.control_type)
+            assign("control_id", lambda: window.element_info.control_id)
+            assign("control_class", lambda: window.element_info.class_name)
+            assign("control_name", lambda: window.element_info.name)
+            assign("control_rect", lambda: window.element_info.rectangle)
+            assign("control_text", lambda: window.element_info.name)
+            assign("control_title", lambda: window.window_text())
+            assign("selected", lambda: ControlInspectorFacade.get_check_state(window))
+            return control_info
         except:
             return {}
-
-        if len(field_list) > 0:
-            control_info = {field: control_info[field] for field in field_list}
-        return control_info
 
     @staticmethod
     def get_application_root_name(window: UIAWrapper) -> str:
