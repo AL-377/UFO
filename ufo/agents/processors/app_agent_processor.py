@@ -350,20 +350,26 @@ class AppAgentProcessor(BaseProcessor):
         Mapping the action to the UFO action
         """
         map_dict = {
-            "Type_keys":{
+            "type_keys":{
                 "function":"keyboard_input",
                 "args":{
-                    "keys":"keys"
+                    "text":"keys"
                 }
             }
         }
 
         if self._operation in map_dict:
-            self._operation = map_dict[self._operation]["function"]
-            for key in map_dict[self._operation]["args"]:
-                ori_value = self._args[key]
+            new_operation = map_dict[self._operation]["function"]
+            # del extra params
+            extra_keys = [key for key in self._args.keys() if key not in map_dict[self._operation]["args"]]
+            for key in extra_keys:
                 del self._args[key]
-                self._args[map_dict[self._operation]["args"][key]] = ori_value  
+            # map the args
+            for ori_key in map_dict[self._operation]["args"]:
+                ori_value = self._args[ori_key]
+                del self._args[ori_key]
+                self._args[map_dict[self._operation]["args"][ori_key]] = ori_value 
+            self._operation = new_operation 
 
     def execute_action(self) -> None:
         """
@@ -393,6 +399,7 @@ class AppAgentProcessor(BaseProcessor):
             if self.status.upper() == self._agent_status_manager.SCREENSHOT.value:
                 self.handle_screenshot_status()
             else:
+                self.log({"Executing the action": f"{self._operation, self._args}"})
                 self._results = self.app_agent.Puppeteer.execute_command(
                     self._operation, self._args
                 )

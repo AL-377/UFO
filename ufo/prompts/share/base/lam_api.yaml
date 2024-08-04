@@ -1,0 +1,84 @@
+select_text:
+  summary: |-
+    "select_text" is to search and select the text in the canvas by content.
+  usage: |-
+    [1] API call: select_text(text="")
+    [2] Args: 
+      - text: The content of the text to be selected in the canvas.
+    [3] Example: select_text(text="Hello World)
+    [4] Available control item: It is a general function.No need to select control item.
+    [5] Return: None 
+
+select_table:
+  summary: |-
+    "select_table" is to select the table in the canvas by number.
+  usage: |-
+    [1] API call: select_table(number=)
+    [2] Args: 
+      - number: The number of the table to be selected in the canvas.1 means the first table, 2 means the second table, and so on.
+    [3] Example: select_table(number=1)
+    [4] Available control item: It is a general function.No need to select control item.
+    [5] Return: None 
+
+insert_table:
+  summary: |-
+    "insert_table" is to insert a table with specified columns and rows in the canvas.
+  usage: |-
+    [1] API call: insert_table(columns=, rows=)
+    [2] Args: 
+      - columns: The number of columns in the table.
+      - rows: The number of rows in the table.
+    [3] Example: insert_table(columns=3, rows=3)
+    [4] Available control item: It is a general function.No need to select control item.
+    [5] Return: None
+
+click_input:
+  summary: |-
+    "click_input" is to click the control item with mouse.
+  usage: |-
+    [1] API call: click_input(button=, double)
+    [2] Args:
+      - button: 'The mouse button to click. One of ''left'', ''right'', ''middle'' or ''x'' (Default: ''left'')'
+      - double: 'Whether to perform a double click or not (Default: False)'
+    [3] Example: click_input(button="left", double=False)
+    [4] Available control item: All control items.
+    [5] Return: None
+
+type_keys:
+  summary: |-
+    "type_keys" is to simulate the keyboard input. You can use this API to simulate the keyboard input, such as shortcut keys, or any other keys that you want to input.
+  usage: |-
+    [1] API call: type_keys(text: str)
+    [2] Args:
+      - text: The key to input. It can be any key on the keyboard, with special keys represented by their virtual key codes. For example, "{VK_CONTROL}c" represents the Ctrl+C shortcut key.
+    [3] Example: 
+      - type_keys(text="{VK_CONTROL}c") --> Copy the selected text.
+      - type_keys(text="{ENTER}") --> Press the Enter key.
+      - type_keys(text="{TAB 2}") --> Press the Tab key twice.
+    [4] Available control item: All control items.
+    [5] Return: None
+
+set_edit_text:
+  summary: |-
+    "set_edit_text" is to input text to the control item or use keyboard shortcuts to control the application.It needs to take action on the Edit control item.
+  usage: |-
+    [1] API call: set_edit_text(text="",newline=True)
+    [2] Args:
+      - text: The text input to the Edit control item. It will change the content of current text in the edit block. Set text ='' if you want to clear current text in the block. You must also use Double Backslash escape character to escape the single quote in the string argument.When you want to type keyborad shortcuts, you should use a single brace to wrap the keyborad shortcuts. And the target control item type should be Edit. For example, set_edit_text(text="{ENTER}") means to press the 'ENTER' key.
+      - newline: Whether to input a newline character. Default is True.When it comes to some keyborad shortcuts, you should set newline=False. For example, set_edit_text(text="{ENTER}",newline=False) means to press the 'ENTER' key and input a newline character.
+    [3] Example: set_edit_text(text="Hello World. \\n I enjoy the reading of the book 'The Lord of the Rings'. It's a great book.")
+    [4] Available control item: [Edit]
+    [5] Return: None
+
+
+wheel_mouse_input:
+  summary: |-
+    "wheel_mouse_input" is to scroll the control item. It typical apply to a ScrollBar type of control item when user request is to scroll the control item, or the targeted control item is not visible nor available in the control item list, but you know the control item is in the application window and you need to scroll to find it.
+  usage: |-
+    [1] API call: wheel_mouse_input()
+    [2] Args: 
+        - wheel_dist: The distance to scroll. Positive values indicate upward scrolling, negative values indicate downward scrolling.
+    [3] Example: wheel_mouse_input(wheel_dist=-20)
+    [4] All control items.
+    [5] Return: None
+  

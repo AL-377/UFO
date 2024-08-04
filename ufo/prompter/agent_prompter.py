@@ -220,13 +220,13 @@ class AppAgentPrompter(BasicPrompter):
             )
         super().__init__(is_visual, version_prompt_template, example_prompt_template)
         self.root_name = root_name
-        self.app_prompter = APIPromptLoader(self.root_name)
+        # self.app_prompter = APIPromptLoader(self.root_name)
         self.api_prompt_template = self.load_prompt_template(api_prompt_template)
 
         self.app_api_prompt_template = None
 
-        if configs.get("USE_APIS", False):
-            self.app_api_prompt_template = self.app_prompter.load_api_prompt()
+        # if configs.get("USE_APIS", False):
+        #     self.app_api_prompt_template = self.app_prompter.load_api_prompt()
 
     def system_prompt_construction(
         self, additional_examples: List[str] = [], tips: List[str] = []
