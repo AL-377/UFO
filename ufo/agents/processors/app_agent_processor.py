@@ -200,55 +200,21 @@ class AppAgentProcessor(BaseProcessor):
         """
         Get the control information.
         """
-        start_time = time.time()
-        control_type_field_name = "control_type" if BACKEND == "uia" else "control_class"
+
         # Get the control information for the control items and the filtered control items, in a format of list of dictionaries.
         self._control_info = self.control_inspector.get_control_info_list_of_dict(
             self._annotation_dict,
-            ["control_text", control_type_field_name,"selected"],
+            ["control_text", "control_type" if BACKEND == "uia" else "control_class"],
         )
-        end_time = time.time()
-        self.update_time_log("get_control_info_list_of_dict", start_time, end_time)
-
-        # print(f"Temp control info: {json.dumps(self._control_info)}")
-        
-        # modify the fields to align lam
-        _fix_control_info = []
-        for control_info in self._control_info:
-            control_info["text"] = control_info["control_text"]
-            del control_info["control_text"]
-
-            control_info["type"] = control_info[control_type_field_name]
-            del control_info[control_type_field_name]
-            _fix_control_info.append(control_info)
-
-        self._control_info = _fix_control_info
-
-        start_time = time.time()
         self.filtered_control_info = (
             self.control_inspector.get_control_info_list_of_dict(
                 self.filtered_annotation_dict,
                 [
                     "control_text",
-                    control_type_field_name,
-                    "selected"
+                    "control_type" if BACKEND == "uia" else "control_class",
                 ],
             )
         )
-        end_time = time.time()
-        self.update_time_log("filter get_control_info_list_of_dict", start_time, end_time)
-
-        
-        _fix_filtered_control_info = []
-        for control_info in self.filtered_control_info:
-
-            control_info["text"] = control_info["control_text"]
-            del control_info["control_text"]
-            control_info["type"] = control_info[control_type_field_name]
-            del control_info[control_type_field_name]
-            _fix_filtered_control_info.append(control_info)
-
-        self.filtered_control_info = _fix_filtered_control_info
 
     def get_prompt_message(self) -> None:
         """
@@ -264,23 +230,21 @@ class AppAgentProcessor(BaseProcessor):
             configs["RAG_ONLINE_RETRIEVED_TOPK"],
         )
 
-        if configs["LAM_TEMPLATE_VERSION"] == 4:
-            step_history = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
-            self._prompt_message = self.app_agent.lam_message_constructor(
-                control_info=self.filtered_control_info,
-                request=self.request,
-                step_history=step_history,
-            )
-        elif configs["LAM_TEMPLATE_VERSION"] == 2:
-            # "step" not the same with version 4
-            step_history = []  if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
-            previous_plan = [] if not self.app_agent.memory.get_latest_item() else self.app_agent.memory.get_latest_item().to_dict().get("previous_plan", [])
-            self._prompt_message = self.app_agent.lam_message_constructor(
-                control_info=self.filtered_control_info,
-                request=self.request,
-                step_history=step_history,
-                previous_plan=previous_plan
-            )
+        # Construct the prompt message for the AppAgent.
+        self._prompt_message = self.app_agent.message_constructor(
+            dynamic_examples=examples,
+            dynamic_tips=tips,
+            dynamic_knowledge=external_knowledge_prompt,
+            image_list=self._image_url,
+            control_info=self.filtered_control_info,
+            prev_subtask=self.previous_subtasks,
+            plan=self.prev_plan,
+            request=self.request,
+            subtask=self.subtask,
+            host_message=self.host_message,
+            include_last_screenshot=configs["INCLUDE_LAST_SCREENSHOT"],
+        )
+
         # Log the prompt message. Only save them in debug mode.
         log = json.dumps(
             {
@@ -318,51 +282,23 @@ class AppAgentProcessor(BaseProcessor):
         except Exception:
             self.general_error_handler()
 
-        self._control_label = self._response_json.get("control_label", "")
-        self.control_text = self._response_json.get("control_name", "")
-        self._operation = self._response_json.get("function", "")
-        self._args = utils.revise_line_breaks(self._response_json.get("args", ""))
+        self._control_label = self._response_json.get("ControlLabel", "")
+        self.control_text = self._response_json.get("ControlText", "")
+        self._operation = self._response_json.get("Function", "")
+        self.question_list = self._response_json.get("Questions", [])
+        self._args = utils.revise_line_breaks(self._response_json.get("Args", ""))
+
+        # Convert the plan from a string to a list if the plan is a string.
+        self.plan = self.string2list(self._response_json.get("Plan", ""))
+        self._response_json["Plan"] = self.plan
 
         # Compose the function call and the arguments string.
         self.action = self.app_agent.Puppeteer.get_command_string(
             self._operation, self._args
         )
 
-        self.status = self._response_json.get("status", "")
-
-        # don't work
-        self.question_list = self._response_json.get("Questions", [])
-        # # Convert the plan from a string to a list if the plan is a string.
-        self.plan = self.string2list(self._response_json.get("Plan", ""))
-        self._response_json["Plan"] = self.plan
-
+        self.status = self._response_json.get("Status", "")
         self.app_agent.print_response(self._response_json)
-
-    def action_mapping(self)->None:
-        """
-        Mapping the action to the UFO action
-        """
-        map_dict = {
-            "type_keys":{
-                "function":"keyboard_input",
-                "args":{
-                    "text":"keys"
-                }
-            }
-        }
-
-        if self._operation in map_dict:
-            new_operation = map_dict[self._operation]["function"]
-            # del extra params
-            extra_keys = [key for key in self._args.keys() if key not in map_dict[self._operation]["args"]]
-            for key in extra_keys:
-                del self._args[key]
-            # map the args
-            for ori_key in map_dict[self._operation]["args"]:
-                ori_value = self._args[ori_key]
-                del self._args[ori_key]
-                self._args[map_dict[self._operation]["args"][ori_key]] = ori_value 
-            self._operation = new_operation 
 
     def execute_action(self) -> None:
         """
@@ -370,9 +306,6 @@ class AppAgentProcessor(BaseProcessor):
         """
 
         try:
-            # mapping the action first
-            self.action_mapping()
-
 
             # Get the selected control item from the annotation dictionary and LLM response.
             # The LLM response is a number index corresponding to the key in the annotation dictionary.
@@ -436,21 +369,6 @@ class AppAgentProcessor(BaseProcessor):
             "annotation", self._args, self._annotation_dict
         )
     
-    def parse_lam_steps(self,response_json)->dict:
-        """
-        Parse the steps in LAM for 'step_history'
-        """
-        step_json = {}
-        step_json['action']={}
-        if configs["LAM_TEMPLATE_VERSION"] == 4:
-            step_json["plan"] = response_json.get("thought", "")
-        step_json['action']["control_name"] = response_json.get("control_name", "")
-        step_json['action']['control_id'] = response_json.get("control_label","")
-        step_json['action']['function'] = response_json.get("function","")
-        step_json['action']['args'] = response_json.get("args","")
-        return step_json
-
-
     def update_memory(self) -> None:
         """
         Update the memory of the Agent.
@@ -477,21 +395,6 @@ class AppAgentProcessor(BaseProcessor):
             "Cost": self._cost,
             "Results": self._results,
         }
-
-        # merge the history response list
-        if configs["LAM_TEMPLATE_VERSION"]==4:
-            if self.app_agent.memory.get_latest_item():
-                step_history =  self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
-            else:
-                step_history = []
-            self._memory_data.set_values_from_dict({"step_history": step_history + [self.parse_lam_steps(self._response_json)]})
-        elif configs["LAM_TEMPLATE_VERSION"]==2:
-            if self.app_agent.memory.get_latest_item():
-                step_history =  self.app_agent.memory.get_latest_item().to_dict().get("step_history", [])
-            else:
-                step_history = []
-            self._memory_data.set_values_from_dict({"step_history": step_history + [self.parse_lam_steps(self._response_json)]})
-            self._memory_data.set_values_from_dict({"previous_plan": self._response_json.get("plan",[])})
         self._memory_data.set_values_from_dict(self._response_json)
         self._memory_data.set_values_from_dict(additional_memory)
 

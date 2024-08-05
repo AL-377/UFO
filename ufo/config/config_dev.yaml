@@ -31,7 +31,9 @@ REQUEST_TIMEOUT: 250  # The call timeout for the GPT-V model
 
 HOSTAGENT_PROMPT: "ufo/prompts/share/base/host_agent.yaml"  # The prompt for the app selection
 # Due to the limitation of input size, lite version of the prompt help users have a taste. And the path is "ufo/prompts/share/lite/host_agent.yaml"
-APPAGENT_PROMPT: "ufo/prompts/share/lam/{version}/app_agent.yaml"  # The prompt for the action selection
+# APPAGENT_PROMPT: "ufo/prompts/share/lam/{version}/app_agent.yaml"  # The prompt for the action selection
+APPAGENT_PROMPT: "ufo/prompts/share/base/app_agent.yaml"  # The prompt for the action selection
+
 # Lite version: "ufo/prompts/share/lite/app_agent.yaml"
 FOLLOWERAHENT_PROMPT: "ufo/prompts/share/base/app_agent.yaml"  # The prompt for the follower agent
 
@@ -50,8 +52,8 @@ EXPERIENCE_SAVED_PATH: "vectordb/experience/"
 DEMONSTRATION_PROMPT: "ufo/prompts/demonstration/demonstration_summary.yaml"
 DEMONSTRATION_SAVED_PATH: "vectordb/demonstration/"
 
-# API_PROMPT: "ufo/prompts/share/base/api.yaml"  # The prompt for the API
-API_PROMPT: "ufo/prompts/share/base/lam_api.yaml"  # The prompt for the API
+API_PROMPT: "ufo/prompts/share/base/api.yaml"  # The prompt for the API
+# API_PROMPT: "ufo/prompts/share/base/lam_api.yaml"  # The prompt for the API
 CLICK_API: "click_input" # The click API
 AFTER_CLICK_WAIT: 0 # The wait time after clicking in seconds, even if the value is 0, there will be a small pause. Default 0.09 in pywinauto.
 INPUT_TEXT_API: "type_keys" # The input text API. Can be "type_keys" or "set_text"

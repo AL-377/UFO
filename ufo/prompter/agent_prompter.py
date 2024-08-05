@@ -215,18 +215,15 @@ class AppAgentPrompter(BasicPrompter):
         :param api_prompt_template: The path of the api prompt template.
         :param root_name: The root name of the app.
         """
-        version_prompt_template = prompt_template.format(
-                version=configs["LAM_TEMPLATE_VERSION"]
-            )
-        super().__init__(is_visual, version_prompt_template, example_prompt_template)
+        super().__init__(is_visual, prompt_template, example_prompt_template)
         self.root_name = root_name
-        # self.app_prompter = APIPromptLoader(self.root_name)
+        self.app_prompter = APIPromptLoader(self.root_name)
         self.api_prompt_template = self.load_prompt_template(api_prompt_template)
 
         self.app_api_prompt_template = None
 
-        # if configs.get("USE_APIS", False):
-        #     self.app_api_prompt_template = self.app_prompter.load_api_prompt()
+        if configs.get("USE_APIS", False):
+            self.app_api_prompt_template = self.app_prompter.load_api_prompt()
 
     def system_prompt_construction(
         self, additional_examples: List[str] = [], tips: List[str] = []
@@ -250,18 +247,6 @@ class AppAgentPrompter(BasicPrompter):
             apis=apis, examples=examples, tips=tips_prompt
         )
     
-    def lam_system_content_construction(self)->str:
-        """
-        Construct the prompt for app selection.
-        :param additional_examples: The additional examples added to the prompt.
-        return: The prompt for app selection.
-        """
-
-        apis = self.lam_api_prompt_helper(verbose=1)
-        system_key = "system" if self.is_visual else "system_nonvisual"
-        return self.prompt_template[system_key].format(
-            apis=apis
-        )
 
     def user_prompt_construction(
         self,
@@ -300,46 +285,6 @@ class AppAgentPrompter(BasicPrompter):
 
         return prompt
     
-    def lam_user_prompt_construction(
-        self,
-        control_item: List[str],
-        user_request: str,
-        **args
-    ):
-        if configs["LAM_TEMPLATE_VERSION"] == 4:
-            prompt = self.prompt_template["user"].format(
-                control_item=json.dumps(control_item),
-                user_request=user_request,
-                step_history=json.dumps(args.get("step_history", [])),
-            )
-        elif configs["LAM_TEMPLATE_VERSION"] == 2:
-            prompt = self.prompt_template["user"].format(
-                control_item=json.dumps(control_item),
-                user_request=user_request,
-                step_history=json.dumps(args.get("step_history", [])),
-                previous_plan = json.dumps(args.get("previous_plan",[]))
-            )
-
-        return prompt
-
-    def lam_user_content_construction(
-        self,
-        control_item: List[str],
-        user_request: str,
-        **args
-    ):
-        user_content = []
-        user_content.append(
-            {
-                "type": "text",
-                "text": self.lam_user_prompt_construction(
-                    control_item=control_item,
-                    user_request=user_request,
-                    **args
-                ),
-            }
-        )
-        return user_content
 
     
     def user_content_construction(
@@ -436,30 +381,6 @@ class AppAgentPrompter(BasicPrompter):
         example_list += [json.dumps(example) for example in additional_examples]
 
         return self.retrived_documents_prompt_helper(header, separator, example_list)
-
-    def lam_api_prompt_helper(self, verbose: int = 1) -> str:
-        """
-        Construct the prompt for APIs.
-        :param apis: The APIs.
-        :param verbose: The verbosity level.
-        return: The prompt for APIs.
-        """
-        api_list = ["- The action type are limited to {actions}.".format(
-                    actions=list(self.api_prompt_template.keys()))]
-    
-        # Construct the prompt for each API
-        for key in self.api_prompt_template.keys():
-            api = self.api_prompt_template[key]
-            if verbose > 0:
-                api_text = "{summary}\n{usage}".format(
-                    summary=api["summary"], usage=api["usage"])
-            else:
-                api_text = api["summary"]
-    
-            api_list.append(api_text)
-    
-        api_prompt = self.retrived_documents_prompt_helper("", "", api_list)
-        return api_prompt
 
 
 
