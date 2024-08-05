@@ -2,13 +2,24 @@
 # Licensed under the MIT License.
 
 import datetime
-from typing import Any, Optional
+from typing import Any, Optional,cast
 
 import openai
 from openai import AzureOpenAI, OpenAI
+import sys, os
 
 from ufo.llm.base import BaseService
 
+def check_module():
+    try:
+        import openai, azure.identity.broker  # type: ignore
+    except ImportError:
+        print("Please install the required packages by running the following command:")
+        print("pip install openai azure-identity-broker --upgrade")
+        exit(1)
+
+
+check_module()
 
 class OpenAIService(BaseService):
     """
@@ -138,19 +149,143 @@ class OpenAIService(BaseService):
             # Handle API error, e.g. retry or log
             raise Exception(f"OpenAI API returned an API Error: {e}")
 
+    # def get_openai_token(
+    #     self,
+    #     token_cache_file: str = "apim-token-cache.bin",
+    #     client_id: Optional[str] = None,
+    #     client_secret: Optional[str] = None,
+    # ) -> str:
+    #     """
+    #     acquire token from Azure AD for your organization
+
+    #     Parameters
+    #     ----------
+    #     token_cache_file : str, optional
+    #         path to the token cache file, by default 'apim-token-cache.bin' in the current directory
+    #     client_id : Optional[str], optional
+    #         client id for AAD app, by default None
+    #     client_secret : Optional[str], optional
+    #         client secret for AAD app, by default None
+
+    #     Returns
+    #     -------
+    #     str
+    #         access token for your own organization
+    #     """
+    #     import os
+
+    #     import msal
+
+    #     cache = msal.SerializableTokenCache()
+
+    #     def save_cache():
+    #         if token_cache_file is not None and cache.has_state_changed:
+    #             with open(token_cache_file, "w") as cache_file:
+    #                 cache_file.write(cache.serialize())
+
+    #     if os.path.exists(token_cache_file):
+    #         cache.deserialize(open(token_cache_file, "r").read())
+
+    #     authority = (
+    #         "https://login.microsoftonline.com/" + self.config_llm["AAD_TENANT_ID"]
+    #     )
+    #     api_scope_base = "api://" + self.config_llm["AAD_API_SCOPE_BASE"]
+
+    #     if client_id is not None and client_secret is not None:
+    #         app = msal.ConfidentialClientApplication(
+    #             client_id=client_id,
+    #             client_credential=client_secret,
+    #             authority=authority,
+    #             token_cache=cache,
+    #         )
+    #         result = app.acquire_token_for_client(
+    #             scopes=[
+    #                 api_scope_base + "/.default",
+    #             ]
+    #         )
+    #         if "access_token" in result:
+    #             return result["access_token"]
+    #         else:
+    #             print(result.get("error"))
+    #             print(result.get("error_description"))
+    #             raise Exception(
+    #                 "Authentication failed for acquiring AAD token for your organization"
+    #             )
+
+    #     scopes = [api_scope_base + "/" + self.config_llm["AAD_API_SCOPE"]]
+    #     app = msal.PublicClientApplication(
+    #         self.config_llm["AAD_API_SCOPE_BASE"],
+    #         authority=authority,
+    #         token_cache=cache,
+    #     )
+    #     result = None
+    #     for account in app.get_accounts():
+    #         try:
+    #             result = app.acquire_token_silent(scopes, account=account)
+    #             if result is not None and "access_token" in result:
+    #                 save_cache()
+    #                 return result["access_token"]
+    #             result = None
+    #         except Exception:
+    #             continue
+
+    #     accounts_in_cache = cache.find(msal.TokenCache.CredentialType.ACCOUNT)
+    #     for account in accounts_in_cache:
+    #         try:
+    #             refresh_token = cache.find(
+    #                 msal.CredentialType.REFRESH_TOKEN,
+    #                 query={"home_account_id": account["home_account_id"]},
+    #             )[0]
+    #             result = app.acquire_token_by_refresh_token(
+    #                 refresh_token["secret"], scopes=scopes
+    #             )
+    #             if result is not None and "access_token" in result:
+    #                 save_cache()
+    #                 return result["access_token"]
+    #             result = None
+    #         except Exception:
+    #             pass
+        
+    #     if result is None:
+    #         try:
+    #             result = app.acquire_token_interactive(scopes=scopes)
+    #             if result is not None and "access_token" in result:
+    #                 save_cache()
+    #                 return result["access_token"]
+    #         except Exception as e:
+    #             pass
+
+    #     if result is None:
+    #         print("no token available from cache, acquiring token from AAD")
+    #         # The pattern to acquire a token looks like this.
+    #         flow = app.initiate_device_flow(scopes=scopes)
+    #         print(flow["message"])
+    #         result = app.acquire_token_by_device_flow(flow=flow)
+    #         if result is not None and "access_token" in result:
+    #             save_cache()
+    #             return result["access_token"]
+    #         else:
+    #             print(result.get("error"))
+    #             print(result.get("error_description"))
+    #             raise Exception(
+    #                 "Authentication failed for acquiring AAD token for your organization"
+    #             )
+
+
     def get_openai_token(
         self,
-        token_cache_file: str = "apim-token-cache.bin",
+        token_cache_file: str = "cloudgpt-apim-token-cache.bin",
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
+        use_broker_login: Optional[bool] = None,
     ) -> str:
         """
-        acquire token from Azure AD for your organization
+        acquire token from Azure AD for CloudGPT OpenAI
 
         Parameters
         ----------
         token_cache_file : str, optional
-            path to the token cache file, by default 'apim-token-cache.bin' in the current directory
+            path to the token cache file, by default 'cloudgpt-apim-token-cache.bin' in the current directory
         client_id : Optional[str], optional
             client id for AAD app, by default None
         client_secret : Optional[str], optional
@@ -159,106 +294,104 @@ class OpenAIService(BaseService):
         Returns
         -------
         str
-            access token for your own organization
+            access token for CloudGPT OpenAI
         """
-        import os
 
+        from azure.identity.broker import InteractiveBrowserBrokerCredential
+        from azure.identity import (
+            ManagedIdentityCredential,
+            ClientSecretCredential,
+            DeviceCodeCredential,
+            AuthenticationRecord,
+        )
+        from azure.identity import TokenCachePersistenceOptions
         import msal
 
-        cache = msal.SerializableTokenCache()
+        api_scope_base = f"api://{self.config_llm['AAD_API_SCOPE_BASE']}"
+        tenant_id = self.config_llm['AAD_TENANT_ID']
+        scope = api_scope_base + "/.default"
 
-        def save_cache():
-            if token_cache_file is not None and cache.has_state_changed:
+        token_cache_option = TokenCachePersistenceOptions(
+            name=token_cache_file,
+            enable_persistence=True,
+            allow_unencrypted_storage=True,
+        )
+
+        def save_auth_record(auth_record: AuthenticationRecord):
+            try:
                 with open(token_cache_file, "w") as cache_file:
-                    cache_file.write(cache.serialize())
-
-        if os.path.exists(token_cache_file):
-            cache.deserialize(open(token_cache_file, "r").read())
-
-        authority = (
-            "https://login.microsoftonline.com/" + self.config_llm["AAD_TENANT_ID"]
-        )
-        api_scope_base = "api://" + self.config_llm["AAD_API_SCOPE_BASE"]
-
-        if client_id is not None and client_secret is not None:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=authority,
-                token_cache=cache,
-            )
-            result = app.acquire_token_for_client(
-                scopes=[
-                    api_scope_base + "/.default",
-                ]
-            )
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                print(result.get("error"))
-                print(result.get("error_description"))
-                raise Exception(
-                    "Authentication failed for acquiring AAD token for your organization"
-                )
-
-        scopes = [api_scope_base + "/" + self.config_llm["AAD_API_SCOPE"]]
-        app = msal.PublicClientApplication(
-            self.config_llm["AAD_API_SCOPE_BASE"],
-            authority=authority,
-            token_cache=cache,
-        )
-        result = None
-        for account in app.get_accounts():
-            try:
-                result = app.acquire_token_silent(scopes, account=account)
-                if result is not None and "access_token" in result:
-                    save_cache()
-                    return result["access_token"]
-                result = None
-            except Exception:
-                continue
-
-        accounts_in_cache = cache.find(msal.TokenCache.CredentialType.ACCOUNT)
-        for account in accounts_in_cache:
-            try:
-                refresh_token = cache.find(
-                    msal.CredentialType.REFRESH_TOKEN,
-                    query={"home_account_id": account["home_account_id"]},
-                )[0]
-                result = app.acquire_token_by_refresh_token(
-                    refresh_token["secret"], scopes=scopes
-                )
-                if result is not None and "access_token" in result:
-                    save_cache()
-                    return result["access_token"]
-                result = None
-            except Exception:
-                pass
-        
-        if result is None:
-            try:
-                result = app.acquire_token_interactive(scopes=scopes)
-                if result is not None and "access_token" in result:
-                    save_cache()
-                    return result["access_token"]
+                    cache_file.write(auth_record.serialize())
             except Exception as e:
-                pass
+                print("failed to save auth record", e)
 
-        if result is None:
-            print("no token available from cache, acquiring token from AAD")
-            # The pattern to acquire a token looks like this.
-            flow = app.initiate_device_flow(scopes=scopes)
-            print(flow["message"])
-            result = app.acquire_token_by_device_flow(flow=flow)
-            if result is not None and "access_token" in result:
-                save_cache()
-                return result["access_token"]
-            else:
-                print(result.get("error"))
-                print(result.get("error_description"))
-                raise Exception(
-                    "Authentication failed for acquiring AAD token for your organization"
+        def load_auth_record() -> Optional[AuthenticationRecord]:
+            try:
+                if not os.path.exists(token_cache_file):
+                    return None
+                with open(token_cache_file, "r") as cache_file:
+                    return AuthenticationRecord.deserialize(cache_file.read())
+            except Exception as e:
+                print("failed to load auth record", e)
+                return None
+
+        auth_record: Optional[AuthenticationRecord] = load_auth_record()
+
+        if client_id is not None:
+            if client_secret is not None:
+                identity = ClientSecretCredential(
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    tenant_id=tenant_id,
+                    cache_persistence_options=token_cache_option,
+                    authentication_record=auth_record,
                 )
+            else:
+                identity = ManagedIdentityCredential(
+                    client_id=client_id,
+                    cache_persistence_options=token_cache_option,
+                )
+        else:
+
+            if use_broker_login is None:
+                # enable broker login for known supported envs
+                if sys.platform.startswith("darwin") or sys.platform.startswith("win32"):
+                    use_broker_login = True
+                elif os.environ.get("WSL_DISTRO_NAME", "") != "":
+                    use_broker_login = True
+                elif os.environ.get("TERM_PROGRAM", "") == "vscode":
+                    use_broker_login = True
+                else:
+                    use_broker_login = False
+            if use_broker_login:
+                identity = InteractiveBrowserBrokerCredential(
+                    tenant_id=self.config_llm['AAD_TENANT_ID'],
+                    cache_persistence_options=token_cache_option,
+                    use_default_broker_account=True,
+                    parent_window_handle=msal.PublicClientApplication.CONSOLE_WINDOW_HANDLE,
+                    authentication_record=auth_record,
+                )
+            else:
+                identity = DeviceCodeCredential(
+                    tenant_id=self.config_llm['AAD_TENANT_ID'],
+                    cache_persistence_options=token_cache_option,
+                    authentication_record=auth_record,
+                )
+
+        try:
+            auth_record = cast(AuthenticationRecord, identity.authenticate(scopes=[scope]))  # type: ignore
+            if auth_record:
+                save_auth_record(auth_record)
+
+        except Exception as e:
+            print("failed to acquire token from AAD for CloudGPT OpenAI", e)
+            raise e
+
+        try:
+            token = identity.get_token(scope)
+            return token.token
+        except Exception as e:
+            print("failed to acquire token from AAD for CloudGPT OpenAI", e)
+            raise e
 
     def auto_refresh_token(
         self,
