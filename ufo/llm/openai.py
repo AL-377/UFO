@@ -203,7 +203,7 @@ class OpenAIService(BaseService):
 
         scopes = [api_scope_base + "/" + self.config_llm["AAD_API_SCOPE"]]
         app = msal.PublicClientApplication(
-            self.config_llm["AAD_API_SCOPE_BASE"],
+            "04b07795-8ddb-461a-bbee-02f9e1bf7b46",  # default id in Azure Identity module
             authority=authority,
             token_cache=cache,
         )
