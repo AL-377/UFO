@@ -109,7 +109,7 @@ class AppAgentProcessor(BaseProcessor):
                 class_name_list=configs["CONTROL_LIST"],
             )
             end_time = time.time()
-            self.log_time("find_control_elements_in_descendants",start_time,end_time)
+            self.update_time_log("find_control_elements_in_descendants",start_time,end_time)
 
         start_time = time.time()
         # Get the annotation dictionary for the control items, in a format of {control_label: control_element}.
@@ -117,7 +117,7 @@ class AppAgentProcessor(BaseProcessor):
             self.application_window, control_list, annotation_type="number"
         )
         end_time = time.time()
-        self.log_time("get_annotation_dict",start_time,end_time)
+        self.update_time_log("get_annotation_dict",start_time,end_time)
 
         start_time = time.time()
         # Attempt to filter out irrelevant control items based on the previous plan.
@@ -125,14 +125,14 @@ class AppAgentProcessor(BaseProcessor):
             self._annotation_dict
         )
         end_time = time.time()
-        self.log_time("get_filtered_annotation_dict",start_time,end_time)
+        self.update_time_log("get_filtered_annotation_dict",start_time,end_time)
 
         start_time = time.time()
         self.photographer.capture_app_window_screenshot(
             self.application_window, save_path=screenshot_save_path
         )
         end_time = time.time()
-        self.log_time("capture_app_window_screenshot",start_time,end_time)
+        self.update_time_log("capture_app_window_screenshot",start_time,end_time)
 
         start_time = time.time()
         # Capture the screenshot of the selected control items with annotation and save it.
@@ -143,7 +143,7 @@ class AppAgentProcessor(BaseProcessor):
             save_path=annotated_screenshot_save_path,
         )
         end_time = time.time()
-        self.log_time("capture_app_window_screenshot_with_annotation_dict",start_time,end_time)
+        self.update_time_log("capture_app_window_screenshot_with_annotation_dict",start_time,end_time)
 
 
         start_time = time.time()
@@ -164,7 +164,7 @@ class AppAgentProcessor(BaseProcessor):
                 )
             ]
         end_time = time.time()
-        self.log_time("INCLUDE_LAST_SCREENSHOT",start_time,end_time)
+        self.update_time_log("INCLUDE_LAST_SCREENSHOT",start_time,end_time)
         
         start_time = time.time()
         # Whether to concatenate the screenshots of clean screenshot and annotated screenshot into one image.
@@ -186,14 +186,14 @@ class AppAgentProcessor(BaseProcessor):
             )
             self._image_url += [screenshot_url, screenshot_annotated_url]
         end_time = time.time()
-        self.log_time("CONCAT_SCREENSHOT",start_time,end_time)
+        self.update_time_log("CONCAT_SCREENSHOT",start_time,end_time)
 
         # Save the XML file for the current state.
         if configs["LOG_XML"]:
             start_time = time.time()
             self._save_to_xml()
             end_time = time.time()
-            self.log_time("LOG_XML",start_time,end_time)
+            self.update_time_log("LOG_XML",start_time,end_time)
         
 
     def get_control_info(self) -> None:
@@ -208,7 +208,7 @@ class AppAgentProcessor(BaseProcessor):
             ["control_text", control_type_field_name,"selected"],
         )
         end_time = time.time()
-        self.log_time("get_control_info_list_of_dict", start_time, end_time)
+        self.update_time_log("get_control_info_list_of_dict", start_time, end_time)
 
         # print(f"Temp control info: {json.dumps(self._control_info)}")
         
@@ -236,7 +236,7 @@ class AppAgentProcessor(BaseProcessor):
             )
         )
         end_time = time.time()
-        self.log_time("filter get_control_info_list_of_dict", start_time, end_time)
+        self.update_time_log("filter get_control_info_list_of_dict", start_time, end_time)
 
         
         _fix_filtered_control_info = []
@@ -392,7 +392,7 @@ class AppAgentProcessor(BaseProcessor):
             if self.status.upper() == self._agent_status_manager.SCREENSHOT.value:
                 self.handle_screenshot_status()
             else:
-                self.log({"Executing the action": f"{self._operation, self._args}"})
+                # self.log({"Executing the action": f"{self._operation, self._args}"})
                 self._results = self.app_agent.Puppeteer.execute_command(
                     self._operation, self._args
                 )

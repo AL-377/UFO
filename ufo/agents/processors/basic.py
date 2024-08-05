@@ -17,10 +17,35 @@ from ufo.automator.ui_control.inspector import ControlInspectorFacade
 from ufo.automator.ui_control.screenshot import PhotographerFacade
 from ufo.config.config import Config
 from ufo.module.context import Context, ContextNames
+import logging
+import os
 
 configs = Config.get_instance().config_data
 BACKEND = configs["CONTROL_BACKEND"]
 
+
+def initialize_logger(log_path: str, log_filename: str) -> logging.Logger:
+    """
+    Initialize logging.
+    log_path: The path of the log file.
+    log_filename: The name of the log file.
+    return: The logger.
+    """
+    # Code for initializing logging
+    logger = logging.Logger(log_filename)
+
+    if not configs["PRINT_LOG"]:
+        # Remove existing handlers if PRINT_LOG is False
+        logger.handlers = []
+
+    log_file_path = os.path.join(log_path, log_filename)
+    file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
+    formatter = logging.Formatter("%(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.setLevel(configs["LOG_LEVEL"])
+
+    return logger
 
 class BaseProcessor(ABC):
     """
@@ -57,8 +82,9 @@ class BaseProcessor(ABC):
         self._action = None
         self._plan = None
         self._step_time_cnts = {}
+        self._time_logger = initialize_logger(self.log_path,'time.log')
 
-    def log_time(self,step_name: str, start_time: float, end_time: float) -> None:
+    def update_time_log(self,step_name: str, start_time: float, end_time: float) -> None:
         print(f"{step_name} took {end_time - start_time:.4f} seconds")
         self._step_time_cnts[step_name] = end_time - start_time
 
@@ -94,7 +120,7 @@ class BaseProcessor(ABC):
         capture_keys = [k for k in end_keys if k not in start_keys]
         self._step_time_cnts["capture detail times"] = {k:v for k,v in self._step_time_cnts.items() if k in capture_keys}
         end_time = time.time()
-        self.log_time("Capture screenshot", start_time, end_time)
+        self.update_time_log("Capture screenshot", start_time, end_time)
 
         # Step 3: Get the control information.
         start_time = time.time()
@@ -104,19 +130,19 @@ class BaseProcessor(ABC):
         control_keys = [k for k in end_keys if k not in start_keys]
         self._step_time_cnts["control detail times"] = {k:v for k,v in self._step_time_cnts.items() if k in control_keys}
         end_time = time.time()
-        self.log_time("Get control information", start_time, end_time)
+        self.update_time_log("Get control information", start_time, end_time)
 
         # Step 4: Get the prompt message.
         start_time = time.time()
         self.get_prompt_message()
         end_time = time.time()
-        self.log_time("Get prompt message", start_time, end_time)
+        self.update_time_log("Get prompt message", start_time, end_time)
 
         # Step 5: Get the response.
         start_time = time.time()
         self.get_response()
         end_time = time.time()
-        self.log_time("Get response", start_time, end_time)
+        self.update_time_log("Get response", start_time, end_time)
 
         if self.is_error():
             return
@@ -125,13 +151,13 @@ class BaseProcessor(ABC):
         start_time = time.time()
         self.update_cost()
         end_time = time.time()
-        self.log_time("Update cost", start_time, end_time)
+        self.update_time_log("Update cost", start_time, end_time)
 
         # Step 7: Parse the response, if there is no error.
         start_time = time.time()
         self.parse_response()
         end_time = time.time()
-        self.log_time("Parse response", start_time, end_time)
+        self.update_time_log("Parse response", start_time, end_time)
 
         if self.is_error() or self.is_paused():
             # If the session is pending, update the step and memory, and return.
@@ -139,12 +165,12 @@ class BaseProcessor(ABC):
                 start_time = time.time()
                 self.update_step()
                 end_time = time.time()
-                self.log_time("Update step (pending)", start_time, end_time)
+                self.update_time_log("Update step (pending)", start_time, end_time)
 
                 start_time = time.time()
                 self.update_memory()
                 end_time = time.time()
-                self.log_time("Update memory (pending)", start_time, end_time)
+                self.update_time_log("Update memory (pending)", start_time, end_time)
 
             return
 
@@ -152,28 +178,29 @@ class BaseProcessor(ABC):
         start_time = time.time()
         self.execute_action()
         end_time = time.time()
-        self.log_time("Execute action", start_time, end_time)
+        self.update_time_log("Execute action", start_time, end_time)
 
         # Step 9: Update the memory.
         start_time = time.time()
         self.update_memory()
         end_time = time.time()
-        self.log_time("Update memory", start_time, end_time)
+        self.update_time_log("Update memory", start_time, end_time)
 
         # Step 10: Update the status.
         start_time = time.time()
         self.update_status()
         end_time = time.time()
-        self.log_time("Update status", start_time, end_time)
+        self.update_time_log("Update status", start_time, end_time)
 
         # Step 11: Update the context.
         start_time = time.time()
         self.update_step()
         end_time = time.time()
-        self.log_time("Update step", start_time, end_time)
+        self.update_time_log("Update step", start_time, end_time)
 
         # log the time consume
-        self.log(self._step_time_cnts)
+        # init the logger of timer and log the time consume
+        self._time_logger.info(json.dumps(self._step_time_cnts))
 
 
     def resume(self) -> None:
