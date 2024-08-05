@@ -43,5 +43,5 @@ def cnt_evaluation_log(log_dir:str,save_file:str):
 
 
 if __name__ == '__main__':
-    # cnt_evaluation_log(r"D:\UFO\logs\2024-08-01-07-18-50","res.json")
-    fix(r"D:\UFO\sample\tasks")
+    cnt_evaluation_log(r"D:\UFO\logs\2024-08-04-18-37-34","res.json")
+    # fix(r"D:\UFO\sample\tasks")
