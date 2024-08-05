@@ -24,7 +24,7 @@ class SessionFactory:
     The factory class to create a session.
     """
 
-    def create_session(self, task: str, mode: str, plan: str) -> BaseSession:
+    def create_session(self, task: str, mode: str, plan: str) -> List[BaseSession]:
         """
         Create a session.
         :param task: The name of current task.
