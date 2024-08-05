@@ -38,7 +38,7 @@ def get_task_time_cnts(task_dir:str):
     global time_cnts  
     log_files = glob.glob(task_dir+"/*")
     for log_file in log_files:
-        if os.path.basename(log_file)=='response.log':
+        if os.path.basename(log_file)=='time.log':
             try:
                 log_lines = open(log_file,'r').readlines()
                 if len(log_lines)==0:
@@ -113,13 +113,13 @@ def plot(cnts:dict=None,title:str="",keys:list=None,xlabel:str="",ylabel:str="")
 
 
 if __name__ == "__main__":
-    get_tasks_time_cnts(r"D:\UFO\logs\2024-07-31-01-06-53")
-    plot(cnts=time_cnts,title="LAM-UFO",xlabel="Stage",ylabel="Time Consume(s)",keys=[
+    get_tasks_time_cnts(r"D:\UFO_1\UFO\logs\2024-08-05-12-55-45")
+    plot(cnts=time_cnts,title="GPT-UFO",xlabel="Stage",ylabel="Time Consume(s)",keys=[
         "screen_shot_capture","get_control_info","get_response","execute_response","update_memory","update_status"
     ])
-    plot(cnts=time_cnts,title="LAM-UFO-Capture",xlabel="Stage",ylabel="Time Consume(s)",keys=[
+    plot(cnts=time_cnts,title="GPT-UFO-Capture",xlabel="Stage",ylabel="Time Consume(s)",keys=[
         "find_control_elements_in_descendants","get_annotation_dict","get_filtered_annotation_dict","capture_app_window_screenshot","capture_app_window_screenshot_with_annotation_dict"])
-    plot(cnts=time_cnts,title="LAM-UFO-Control",xlabel="Stage",ylabel="Time Consume(s)",keys=[
+    plot(cnts=time_cnts,title="GPT-UFO-Control",xlabel="Stage",ylabel="Time Consume(s)",keys=[
         "get_control_info_list_of_dict","filter get_control_info_list_of_dict"
     ])
 

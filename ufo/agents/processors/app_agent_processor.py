@@ -201,20 +201,30 @@ class AppAgentProcessor(BaseProcessor):
         Get the control information.
         """
 
+        start_time = time.time()
+        control_type_field_name = "control_type" if BACKEND == "uia" else "control_class"
         # Get the control information for the control items and the filtered control items, in a format of list of dictionaries.
         self._control_info = self.control_inspector.get_control_info_list_of_dict(
             self._annotation_dict,
-            ["control_text", "control_type" if BACKEND == "uia" else "control_class"],
+            ["control_text", control_type_field_name,"selected"],
         )
+        end_time = time.time()
+        self.update_time_log("get_control_info_list_of_dict", start_time, end_time)
+        
+
+        start_time = time.time()
+
         self.filtered_control_info = (
             self.control_inspector.get_control_info_list_of_dict(
                 self.filtered_annotation_dict,
                 [
                     "control_text",
-                    "control_type" if BACKEND == "uia" else "control_class",
+                    control_type_field_name
                 ],
             )
         )
+        end_time = time.time()
+        self.update_time_log("filter get_control_info_list_of_dict", start_time, end_time)
 
     def get_prompt_message(self) -> None:
         """
