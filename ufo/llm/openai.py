@@ -235,7 +235,7 @@ class OpenAIService(BaseService):
             except Exception:
                 pass
         
-        if result is None:
+        if self.config_llm.get("AAD_INTERACTIVE_AUTH", True) and result is None:
             try:
                 result = app.acquire_token_interactive(scopes=scopes)
                 if result is not None and "access_token" in result:
