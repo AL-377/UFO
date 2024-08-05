@@ -12,6 +12,7 @@ from ufo.utils import print_with_color
 
 from .base import BaseService
 
+lam_shared_connection = requests.Session()
 
 class LAMService(BaseService):
     def __init__(self, config, agent_type: str):
@@ -19,7 +20,7 @@ class LAMService(BaseService):
         self.config = config
         self.max_retry = self.config["MAX_RETRY"]
         self.timeout = self.config["TIMEOUT"]
-        self.session = requests.Session()
+        self.session = lam_shared_connection
 
     def chat_completion(
         self,
