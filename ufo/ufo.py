@@ -33,6 +33,13 @@ args.add_argument(
     type=str,
     default="",
 )
+args.add_argument(
+    "--log",
+    "-l",
+    help="The path of the log folder. It is only required for the evaluate mode.",
+    type=str,
+    default="",
+)
 
 
 parsed_args = args.parse_args()
@@ -49,7 +56,7 @@ def main():
     python -m ufo -t task_name -m follower -p path_to_plan_file_or_folder
     """
     sessions = SessionFactory().create_session(
-        task=parsed_args.task, mode=parsed_args.mode, plan=parsed_args.plan
+        task=parsed_args.task, mode=parsed_args.mode, plan=parsed_args.plan, log_dir = parsed_args.log
     )
     import time 
     start_time = time.time()

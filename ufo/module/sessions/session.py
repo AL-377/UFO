@@ -24,7 +24,7 @@ class SessionFactory:
     The factory class to create a session.
     """
 
-    def create_session(self, task: str, mode: str, plan: str) -> List[BaseSession]:
+    def create_session(self, task: str, mode: str, plan: str,log_dir:str) -> List[BaseSession]:
         """
         Create a session.
         :param task: The name of current task.
@@ -47,6 +47,13 @@ class SessionFactory:
             else:
                 return [
                     BatchSession(task, plan, configs.get("EVA_SESSION", False), id=0)
+                ]
+        elif mode=="evaluate":
+            if self.is_folder(plan):
+                return self.create_evaluate_session_in_batch(task, plan, log_dir)
+            else:
+                return [
+                    EvaluateSession(task, plan, configs.get("EVA_SESSION", False), id=0,log_dir=log_dir)
                 ]
         else:
             raise ValueError(f"The {mode} mode is not supported.")
@@ -98,15 +105,56 @@ class SessionFactory:
 
         return sessions
 
+    def create_evaluate_session_in_batch(
+        self, task: str, plan: str,log_dir:str
+    ) -> List[BaseSession]:
+        """
+        Create a follower session.
+        :param task: The name of current task.
+        :param plan: The path folder of all plan files.
+        :return: The list of created follower sessions.
+        """
+        plan_files = self.get_plan_files(plan)
+        file_names = [self.get_file_name_without_extension(f) for f in plan_files]
+        sessions = [
+            EvaluateSession(
+                f"{task}/{file_name}",
+                plan_file,
+                configs.get("EVA_SESSION", False),
+                id=i,
+                log_dir=log_dir
+            )
+            for i, (file_name, plan_file) in enumerate(zip(file_names, plan_files))
+        ]
+
+        return sessions
+
     
     @staticmethod
-    def is_folder(path: str) -> bool:
+    def is_folder(path: str, level: int = 1) -> bool:
         """
-        Check if the path is a folder.
+        Check if the path is a folder up to a certain level.
         :param path: The path to check.
-        :return: True if the path is a folder, False otherwise.
+        :param level: The depth of the folder structure to check.
+        :return: True if the path is a folder up to the specified level, False otherwise.
         """
-        return os.path.isdir(path)
+        def folder_depth(path: str) -> int:
+            """
+            Calculate the depth of the subfolders for a given path.
+            :param path: The root path to start calculating the depth.
+            :return: The depth of the deepest subfolder.
+            """
+            if not os.path.isdir(path):
+                return 0
+            
+            max_depth = 0
+            for entry in os.scandir(path):
+                if entry.is_dir():
+                    depth = folder_depth(entry.path)
+                    if depth > max_depth:
+                        max_depth = depth
+            return max_depth + 1
+        return level==folder_depth(path)
 
     @staticmethod
     def get_plan_files(path: str) -> List[str]:
@@ -427,3 +475,58 @@ class BatchSession(BaseSession):
             print('Error while closing word:', e)
         finally:
             time.sleep(configs["SLEEP_TIME"])
+
+
+
+class EvaluateSession(BaseSession):
+    """
+    A session for UFO.
+    """
+    def __init__(
+        self, task: str, plan_file: str, should_evaluate: bool, id: int, log_dir:str
+    ) -> None:
+        """
+        Initialize a session. 
+        :param task: The name of current task.
+        :param plan_file: The path of the plan file to follow.
+        :param should_evaluate: Whether to evaluate the session.
+        :param id: The id of the session.
+        """
+
+        super().__init__(task, should_evaluate, id)
+
+        self.plan_reader = PlanReader(plan_file)
+        # change the log path to the offline executes log dir
+        plan_file_name = os.path.basename(plan_file)
+        self.log_path = os.path.join(log_dir,plan_file_name.split(".")[0])
+        # print(f"self log path changed to:{self.log_path}")
+
+    def create_new_round(self) -> BaseRound | None:
+        return None
+    def next_request(self) -> str:
+        return ""
+    def run(self) -> None:
+        """
+        Run the session.
+        """
+        self.evaluation()
+
+    def _init_context(self) -> None:
+        """
+        Initialize the context.
+        """
+        self.context.set(ContextNames.ID, self.id)
+        self.context.set(ContextNames.LOG_PATH, self.log_path)
+        eval_logger = self.initialize_logger(self.log_path, "evaluation.log")
+        self.context.set(ContextNames.EVALUATION_LOGGER, eval_logger)
+        self.context.set(ContextNames.MODE, "evaluate")
+
+    def request_to_evaluate(self) -> bool:
+        """
+        Check if the session should be evaluated.
+        :return: True if the session should be evaluated, False otherwise.
+        """
+        return self.plan_reader.get_task()
+
+    def quit(self):
+        pass

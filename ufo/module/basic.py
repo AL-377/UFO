@@ -598,7 +598,7 @@ class BaseSession(ABC):
         evaluator = EvaluationAgent(
             name="eva_agent",
             app_root_name=self.context.get(ContextNames.APPLICATION_ROOT_NAME),
-            is_visual=configs["APP_AGENT"]["VISUAL_MODE"],
+            is_visual=configs["HOST_AGENT"]["VISUAL_MODE"],
             main_prompt=configs["EVALUATION_PROMPT"],
             example_prompt="",
             api_prompt=configs["API_PROMPT"],
