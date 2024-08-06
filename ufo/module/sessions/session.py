@@ -406,6 +406,7 @@ class BatchSession(BaseSession):
     def quit(self):
         try:
             control_inspector = ControlInspectorFacade("uia")
+            ControlInspectorFacade.close_window_by_class_name("bosa_sdm_msword")
             control_list = control_inspector.find_control_elements_in_descendants(self.application_window)
             for control_item in control_list:
                 try:

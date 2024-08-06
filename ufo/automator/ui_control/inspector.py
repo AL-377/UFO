@@ -17,6 +17,7 @@ from ufo.config.config import Config
 
 
 configs = Config.get_instance().config_data
+BACKEND = configs["CONTROL_BACKEND"]
 
 
 class BackendFactory:
@@ -471,3 +472,11 @@ class ControlInspectorFacade:
             return process.name()
         except psutil.NoSuchProcess:
             return ""
+    @staticmethod
+    def close_window_by_class_name(class_name):
+        "Delete a desktop level window by its class name."
+        windows = Desktop(backend=BACKEND).windows()
+        for win in windows:
+            if win.class_name() == class_name:
+                win.close()
+    
