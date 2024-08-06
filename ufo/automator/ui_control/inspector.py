@@ -6,12 +6,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Callable, cast, Dict, List
 
+import time
 import psutil
 import pywinauto
 from pywinauto import Desktop
 from pywinauto.controls.uiawrapper import UIAWrapper
+import pywinauto.uia_defines
 from pywinauto.uia_element_info import UIAElementInfo
 import uiautomation as auto
+import functools
+
+import comtypes.gen.UIAutomationClient as UIAutomationClient_dll
+
 
 from ufo.config.config import Config
 
@@ -80,6 +86,73 @@ class BackendStrategy(ABC):
         pass
 
 
+class UIAElementInfoFix(UIAElementInfo):
+    _cached_rect = None
+    _time_delay_marker = False
+    
+    def sleep(self, ms: float = 0):
+        import time
+        if UIAElementInfoFix._time_delay_marker:
+            ms = max(20, ms)
+        else:
+            ms = max(1, ms)
+        time.sleep(ms / 1000.0)
+        UIAElementInfoFix._time_delay_marker = False
+
+    @staticmethod
+    def _time_wrap(func):
+        def dec(self, *args, **kvargs):
+            name = func.__name__
+            before = time.time()
+            result = func(self, *args, **kvargs)
+            if time.time() - before > 0.020:
+                print(f"[❌][{name}][{hash(self._element)}] lookup took {(time.time() - before) * 1000:.2f} ms")
+                UIAElementInfoFix._time_delay_marker = True
+            elif time.time() - before > 0.005:
+                print(f"[⚠️][{name}][{hash(self._element)}]Control type lookup took {(time.time() - before) * 1000:.2f} ms")
+                UIAElementInfoFix._time_delay_marker = True
+            else:
+                # print(f"[✅][{name}][{hash(self._element)}]Control type lookup took {(time.time() - before) * 1000:.2f} ms")
+                UIAElementInfoFix._time_delay_marker = False
+            return result
+        return dec
+
+    @_time_wrap
+    def _get_current_name(self):
+        return super()._get_current_name()
+    
+    @_time_wrap
+    def _get_current_rich_text(self):
+        return super()._get_current_rich_text()
+
+    @_time_wrap
+    def _get_current_class_name(self):
+        return super()._get_current_class_name()    
+    
+    @_time_wrap
+    def _get_current_control_type(self):
+        return super()._get_current_control_type()
+    
+    @_time_wrap
+    def _get_current_rectangle(self):
+        bound_rect = self._element.CurrentBoundingRectangle
+        rect = pywinauto.win32structures.RECT()
+        rect.left = bound_rect.left
+        rect.top = bound_rect.top
+        rect.right = bound_rect.right
+        rect.bottom = bound_rect.bottom
+        return rect
+    
+    def _get_cached_rectangle(self) -> tuple[int, int, int, int]:
+        if self._cached_rect is None:
+            self._cached_rect = self._get_current_rectangle()
+        return self._cached_rect
+    
+    @property
+    def rectangle(self):
+        return self._get_cached_rectangle()
+    
+
 class UIABackendStrategy(BackendStrategy):
     """
     The backend strategy for UIA.
@@ -142,57 +215,119 @@ class UIABackendStrategy(BackendStrategy):
         
         assert class_name_list is None or len(class_name_list) == 0, "class_name_list is not supported for UIA backend"
 
+        _, iuia_dll = UIABackendStrategy._get_uia_defs()
         window_elem_info = cast(UIAElementInfo, window.element_info)
+        window_elem_com_ref = cast(UIAutomationClient_dll.IUIAutomationElement, window_elem_info._element)
         
+        condition = UIABackendStrategy._get_control_filter_condition(
+            control_type_list,
+            is_visible,
+            is_enabled,
+        )
+        
+        cache_request = UIABackendStrategy._get_cache_request()
+
+        com_elem_array = window_elem_com_ref.FindAllBuildCache(
+            scope=iuia_dll.TreeScope_Descendants,
+            condition=condition,
+            cacheRequest=cache_request,
+        )
+
+        elem_info_list = [
+            (elem, elem.CachedControlType, elem.CachedName, elem.CachedBoundingRectangle)
+            for elem in (com_elem_array.GetElement(n) for n in range(min(com_elem_array.Length, 300)))
+        ]
+
+        control_elements: List[UIAWrapper] = []
+        
+        for elem, elem_type, elem_name, elem_rect in elem_info_list:
+            element_info = UIAElementInfoFix(elem, True)
+        
+            # handle is not needed, skip fetching
+            element_info._cached_handle = 0
+            
+            # visibility is determined by filter condition
+            element_info._cached_visible = True
+            
+            # fill the values with pre-fetched data
+            rect = pywinauto.win32structures.RECT()
+            rect.left = elem_rect.left
+            rect.top = elem_rect.top
+            rect.right = elem_rect.right
+            rect.bottom = elem_rect.bottom
+            element_info._cached_rect = rect
+            element_info._cached_name = elem_name
+            element_info._cached_control_type = elem_type
+
+            # currently rich text is not used, skip fetching but use name as alternative
+            # this could be reverted if some control requires rich text
+            element_info._cached_rich_text = elem_name
+            
+            # class name is not used directly, could pre-fetch in future
+            # element_info.class_name
+            
+            uia_interface = UIAWrapper(element_info)
+            
+            def __hash__(self):
+                return hash(self.element_info._element)
+            # current __hash__ is not referring to a COM property (RuntimeId), which is costly to fetch
+            uia_interface.__hash__ = __hash__
+
+            control_elements.append(uia_interface)
+            
+        return control_elements
+    
+    
+    @staticmethod
+    def _get_uia_control_id_map():
         iuia = pywinauto.uia_defines.IUIA()
-        cond = iuia.iuia.CreateAndConditionFromArray([
-            iuia.iuia.CreatePropertyCondition(
-                iuia.UIA_dll.UIA_IsEnabledPropertyId, is_enabled
+        return iuia.known_control_types
+
+    @staticmethod
+    @functools.lru_cache()
+    def _get_cache_request():
+        iuia_com, iuia_dll = UIABackendStrategy._get_uia_defs()
+        cache_request = iuia_com.CreateCacheRequest()
+        cache_request.AddProperty(iuia_dll.UIA_ControlTypePropertyId)
+        cache_request.AddProperty(iuia_dll.UIA_NamePropertyId)
+        cache_request.AddProperty(iuia_dll.UIA_BoundingRectanglePropertyId)
+        return cache_request
+    
+    @staticmethod
+    def _get_control_filter_condition(
+        control_type_list: List[str] = [],
+        is_visible: bool = True,
+        is_enabled: bool = True,
+    ):
+        iuia_com, iuia_dll = UIABackendStrategy._get_uia_defs()
+        condition = iuia_com.CreateAndConditionFromArray([
+            iuia_com.CreatePropertyCondition(
+                iuia_dll.UIA_IsEnabledPropertyId, is_enabled
             ),
-            iuia.iuia.CreatePropertyCondition(
+            iuia_com.CreatePropertyCondition(
                 # visibility is determined by IsOffscreen property
-                iuia.UIA_dll.UIA_IsOffscreenPropertyId, not is_visible
+                iuia_dll.UIA_IsOffscreenPropertyId, not is_visible
             ),
-            iuia.iuia.CreateOrConditionFromArray([
-                iuia.iuia.CreatePropertyCondition(
-                    iuia.UIA_dll.UIA_ControlTypePropertyId, 
+            iuia_com.CreatePropertyCondition(
+                iuia_dll.UIA_IsControlElementPropertyId, True
+            ),
+            iuia_com.CreateOrConditionFromArray([
+                iuia_com.CreatePropertyCondition(
+                    iuia_dll.UIA_ControlTypePropertyId, 
                     control_type if control_type is int 
-                    else iuia.known_control_types[control_type]
+                    else UIABackendStrategy._get_uia_control_id_map()[control_type]
                 )
                 for control_type in control_type_list
             ]),
         ])
-        control_elements = window_elem_info._get_elements(
-            tree_scope=iuia.tree_scope["descendants"],
-            cond = cond,
-            # enable caching for performance on later property lookup
-            cache_enable=True,
-        )
+        return condition
         
-        def perf_fix(element_info: UIAElementInfo) -> UIAElementInfo:
-            # handle is not needed, skip fetching
-            element_info._cached_handle = 0
-            
-            # rect is frequently used, cache it
-            element_info._cached_rect = None
-            def _get_rectangle(self) -> tuple[int, int, int, int]:
-                if self._cached_rect is None:
-                    bound_rect = self._element.CurrentBoundingRectangle
-                    rect = pywinauto.win32structures.RECT()
-                    rect.left = bound_rect.left
-                    rect.top = bound_rect.top
-                    rect.right = bound_rect.right
-                    rect.bottom = bound_rect.bottom
-                    self._cached_rect = rect
-                return self._cached_rect
-            element_info._get_rectangle = _get_rectangle
-            return element_info
-        
-        
-        return [
-            UIAWrapper(perf_fix(element_info))
-            for element_info in control_elements
-        ]
+    @staticmethod
+    def _get_uia_defs():
+        iuia = pywinauto.uia_defines.IUIA()
+        iuia_com: UIAutomationClient_dll.IUIAutomation = iuia.iuia
+        iuia_dll: UIAutomationClient_dll = iuia.UIA_dll
+        return iuia_com, iuia_dll
 
 
 class Win32BackendStrategy(BackendStrategy):
