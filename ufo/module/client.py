@@ -25,7 +25,10 @@ class UFOClientManager:
         """
 
         for session in self.session_list:
-            session.run()
+            try:
+                session.run()
+            except Exception as e:
+                print(str(e))
 
     @property
     def session_list(self) -> List[BaseSession]:
