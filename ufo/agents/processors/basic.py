@@ -82,7 +82,7 @@ class BaseProcessor(ABC):
         self._action = None
         self._plan = None
         self._step_time_cnts = {}
-        self._time_logger = initialize_logger(self.log_path,'time.log')
+        self._time_logger = initialize_logger(self.log_path,'process_time.log')
 
     def update_time_log(self,step_name: str, start_time: float, end_time: float) -> None:
         print(f"{step_name} took {end_time - start_time:.4f} seconds")

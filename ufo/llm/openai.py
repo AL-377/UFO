@@ -40,15 +40,16 @@ class OpenAIService(BaseService):
                 timeout=self.config["TIMEOUT"],
                 api_version=self.config_llm["API_VERSION"],
                 azure_endpoint=self.config_llm["API_BASE"],
-                api_key=(
-                    self.config_llm["API_KEY"]
-                    if self.api_type == "aoai"
-                    else self.get_openai_token()
-                ),
+                azure_ad_token_provider=self.get_openai_token,
+                # api_key=(
+                #     self.config_llm["API_KEY"]
+                #     if self.api_type == "aoai"
+                #     else self.get_openai_token()
+                # ),
             )
         )
-        if self.api_type == "azure_ad":
-            self.auto_refresh_token()
+        # if self.api_type == "azure_ad":
+        #     self.auto_refresh_token()
 
     def chat_completion(
         self,
@@ -203,7 +204,8 @@ class OpenAIService(BaseService):
 
         scopes = [api_scope_base + "/" + self.config_llm["AAD_API_SCOPE"]]
         app = msal.PublicClientApplication(
-            self.config_llm["AAD_API_SCOPE_BASE"],  # default id in Azure Identity module
+            "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+            # self.config_llm["AAD_API_SCOPE_BASE"],  # default id in Azure Identity module
             authority=authority,
             token_cache=cache,
         )

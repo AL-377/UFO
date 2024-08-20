@@ -38,7 +38,7 @@ def get_task_time_cnts(task_dir:str):
     global time_cnts  
     log_files = glob.glob(task_dir+"/*")
     for log_file in log_files:
-        if os.path.basename(log_file)=='time.log':
+        if os.path.basename(log_file)=='process_time.log':
             try:
                 log_lines = open(log_file,'r').readlines()
                 if len(log_lines)==0:
