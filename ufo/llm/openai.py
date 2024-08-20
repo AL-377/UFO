@@ -40,15 +40,16 @@ class OpenAIService(BaseService):
                 timeout=self.config["TIMEOUT"],
                 api_version=self.config_llm["API_VERSION"],
                 azure_endpoint=self.config_llm["API_BASE"],
-                api_key=(
-                    self.config_llm["API_KEY"]
-                    if self.api_type == "aoai"
-                    else self.get_openai_token()
-                ),
+                azure_ad_token_provider=self.get_openai_token,
+                # api_key=(
+                #     self.config_llm["API_KEY"]
+                #     if self.api_type == "aoai"
+                #     else self.get_openai_token
+                # ),
             )
         )
-        if self.api_type == "azure_ad":
-            self.auto_refresh_token()
+        # if self.api_type == "azure_ad":
+        #     self.auto_refresh_token()
 
     def chat_completion(
         self,
@@ -203,7 +204,8 @@ class OpenAIService(BaseService):
 
         scopes = [api_scope_base + "/" + self.config_llm["AAD_API_SCOPE"]]
         app = msal.PublicClientApplication(
-            self.config_llm["AAD_API_SCOPE_BASE"],
+            "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+            # self.config_llm["AAD_API_SCOPE_BASE"],  # default id in Azure Identity module
             authority=authority,
             token_cache=cache,
         )
@@ -234,6 +236,15 @@ class OpenAIService(BaseService):
                 result = None
             except Exception:
                 pass
+        
+        if self.config_llm.get("AAD_INTERACTIVE_AUTH", True) and result is None:
+            try:
+                result = app.acquire_token_interactive(scopes=scopes)
+                if result is not None and "access_token" in result:
+                    save_cache()
+                    return result["access_token"]
+            except Exception as e:
+                pass
 
         if result is None:
             print("no token available from cache, acquiring token from AAD")
@@ -250,7 +261,13 @@ class OpenAIService(BaseService):
                 raise Exception(
                     "Authentication failed for acquiring AAD token for your organization"
                 )
-
+    # def get_openai_token(self):
+    #     from azure.identity import ManagedIdentityCredential
+    #     identity = ManagedIdentityCredential(
+    #     client_id="14e8afd2-92b1-4b48-9c89-97a095be4895")
+    #     api_scope = "api://" + "feb7b661-cac7-44a8-8dc1-163b63c23df2" + "/.default"
+    #     return identity.get_token(api_scope).token
+    
     def auto_refresh_token(
         self,
         token_cache_file: str = "apim-token-cache.bin",
