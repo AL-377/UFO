@@ -269,6 +269,7 @@ class Session(BaseSession):
         except Exception as e:
             print('Error while closing word:', e)
         finally:
+            os.system("taskkill /f /im WINWORD.EXE")
             time.sleep(configs["SLEEP_TIME"])
 
 class FollowerSession(BaseSession):
@@ -474,6 +475,7 @@ class BatchSession(BaseSession):
         except Exception as e:
             print('Error while closing word:', e)
         finally:
+            os.system("taskkill /f /im WINWORD.EXE")
             time.sleep(configs["SLEEP_TIME"])
 
 

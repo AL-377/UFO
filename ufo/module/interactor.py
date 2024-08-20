@@ -54,12 +54,13 @@ def experience_asker() -> bool:
         "magenta",
     )
 
-    ans = input()
+    # ans = input()
 
-    if ans.upper() == "Y":
-        return True
-    else:
-        return False
+    # if ans.upper() == "Y":
+    #     return True
+    # else:
+    #     return False
+    return False
 
 
 def question_asker(question: str, index: int) -> str:
@@ -75,7 +76,7 @@ def question_asker(question: str, index: int) -> str:
         "cyan",
     )
 
-    return input()
+    return False
 
 
 def sensitive_step_asker(action, control_text) -> bool:
@@ -93,12 +94,13 @@ def sensitive_step_asker(action, control_text) -> bool:
         "magenta",
     )
 
-    while True:
-        # user_input = input().upper()
-        user_input = "Y"
-        if user_input == "Y":
-            return True
-        elif user_input == "N":
-            return False
-        else:
-            print("Invalid choice. Please enter either Y or N. Try again.")
+    # while True:
+    #     # user_input = input().upper()
+    #     user_input = "Y"
+    #     if user_input == "Y":
+    #         return True
+    #     elif user_input == "N":
+    #         return False
+    #     else:
+    #         print("Invalid choice. Please enter either Y or N. Try again.")
+    return True

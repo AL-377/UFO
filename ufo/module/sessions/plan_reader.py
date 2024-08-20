@@ -4,6 +4,7 @@
 import json
 import os
 import time
+import win32com.client
 from typing import List, Optional
 
 from ufo.config.config import Config
@@ -81,10 +82,11 @@ class PlanReader:
     
     def get_file_path(self):
         
-        file_path = os.path.dirname(os.path.abspath(self.plan_file)).replace('tasks', 'files')
-        file = os.path.basename(self.plan.get("action_prefill_file_path", ))
+        # file_path = os.path.dirname(os.path.abspath(self.plan_file)).replace('tasks', 'files')
+        # file = os.path.basename(self.plan.get("action_prefill_file_path", ))
         
-        return os.path.join(file_path, file)
+        # return os.path.join(file_path, file)
+        return self.plan.get("action_prefill_file_path", )
     
     def get_host_request(self) -> str:
         """
@@ -105,6 +107,9 @@ class PlanReader:
         try:
             exec(code_snippet, globals())
             time.sleep(3)  # wait for the app to boot
+            word_app = win32com.client.Dispatch("Word.Application")
+
+            word_app.WindowState = 1  # wdWindowStateMaximize
 
         except Exception as e:
             print(f"An error occurred: {e}", "red")
