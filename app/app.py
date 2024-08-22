@@ -38,11 +38,11 @@ def consume():
     global tasks_dir
     data = request.json
     user_name = data.get('user_name')
-    task_name = data.get('task_name')
+    task_file = data.get('task_file')
     mode="batch_normal"
     task_log = user_name + "_" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     sessions = SessionFactory().create_session(
-        task=task_log, mode=mode, plan=tasks_dir + task_name
+        task=task_log, mode=mode, plan=tasks_dir + task_file
     )
     clients = UFOClientManager(sessions)
     clients.run_all()
@@ -52,7 +52,7 @@ def consume():
     return jsonify({
         "status": "Finish UFO",
         "user_name": user_name,
-        "task_name":task_name,
+        "task_file":task_file,
         "thoughts": thoughts
     })
 
