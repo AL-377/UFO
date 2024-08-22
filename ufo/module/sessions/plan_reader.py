@@ -94,7 +94,6 @@ class PlanReader:
         
         task = self.get_task()
         object_name = self.get_operation_object()
-        # os.path.basename(file.get("action_prefill_file_path"))
         file = self.get_file_path()
 
         code_snippet = (
