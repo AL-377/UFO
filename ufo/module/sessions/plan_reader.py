@@ -32,8 +32,10 @@ class PlanReader:
         Get the task name.
         :return: The task name.
         """
-
-        return self.plan.get("new_problem", "")
+        task = self.plan.get("new_problem", "")
+        if len(task) == 0:
+            task = self.plan.get("task", "")
+        return task
 
     def get_steps(self) -> List[str]:
         """
@@ -82,7 +84,9 @@ class PlanReader:
     def get_file_path(self):
         
         file_path = os.path.dirname(os.path.abspath(self.plan_file)).replace('tasks', 'files')
-        file = os.path.basename(self.plan.get("action_prefill_file_path", ))
+        file = os.path.basename(self.plan.get("action_prefill_file_path", ""))
+        if len(file) == 0:
+            file = os.path.basename(self.plan.get("file_path", ""))
         
         return os.path.join(file_path, file)
     

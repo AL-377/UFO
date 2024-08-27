@@ -45,16 +45,24 @@ def consume():
         task=task_log, mode=mode, plan=tasks_dir + task_file
     )
     clients = UFOClientManager(sessions)
-    clients.run_all()
+    res = clients.run_all()
     # extract thoughts from the response.log
-    thoughts = extract_thoughts(task_log)
-    # return thoughts to the client
-    return jsonify({
-        "status": "Finish UFO",
-        "user_name": user_name,
-        "task_file":task_file,
-        "thoughts": thoughts
-    })
+    if res:
+        thoughts = extract_thoughts(task_log)
+        # return thoughts to the client
+        return jsonify({
+            "status": "Finish UFO",
+            "user_name": user_name,
+            "task_file":task_file,
+            "thoughts": thoughts
+        })
+    else:
+        return jsonify({
+            "status": "UFO Time out",
+            "user_name": user_name,
+            "task_file":task_file,
+            "thoughts": "TIME OUT"
+        })
 
 def main():
     app.run(host='localhost', port=6000)

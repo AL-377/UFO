@@ -2,6 +2,7 @@ CONTROL_BACKEND: "uia"  # The backend for control action, currently we support u
 MAX_STEP: 100  # The max step limit for completing the user request
 SLEEP_TIME: 0.5  # The sleep time between each step to wait for the window to be ready
 
+TIME_OUT: 300
 # Skip rendering visual outline on screen if not necessary
 SHOW_VISUAL_OUTLINE_ON_SCREEN: False
 RECTANGLE_TIME: 1

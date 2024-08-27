@@ -94,13 +94,17 @@ class BaseRound(ABC):
 
         self.context.set(ContextNames.CURRENT_ROUND_ID, self.id)
 
-    def run(self) -> None:
+    def run(self) -> bool:
         """
         Run the round.
         """
-
+        time_out = configs["TIME_OUT"]
+        start_time = time.time()
         while not self.is_finished():
-
+            print("time:",time.time()-start_time)
+            print("time_out:",time_out)
+            if time.time() - start_time > time_out:
+                return False
             self.agent.handle(self.context)
 
             self.state = self.agent.state.next_state(self.agent)
@@ -122,6 +126,7 @@ class BaseRound(ABC):
 
         if self._should_evaluate:
             self.evaluation()
+        return True
 
     def is_finished(self) -> bool:
         """
@@ -346,14 +351,14 @@ class BaseSession(ABC):
         """
         Run the session.
         """
-
         while not self.is_finished():
-
             round = self.create_new_round()
             if round is None:
                 break
-            round.run()
-
+            res = round.run()
+            if not res:
+                break
+        
         if self.application_window is not None:
             self.capture_last_snapshot()
 
