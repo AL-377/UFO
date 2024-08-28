@@ -6,11 +6,38 @@ import json
 import os
 from typing import Optional, Any, Dict
 import tiktoken
-
+import tkinter as tk
 from colorama import Fore, Style, init
 
 # init colorama
 init()
+
+def create_text_display(text: str):
+    """Create text display window with tkinter."""
+    root = tk.Tk()
+    root.overrideredirect(True)
+    
+    label = tk.Label(root, text=text, fg="red", font=("Arial", 14), bg='white', wraplength=800,anchor='center',justify='center')
+    label.pack(expand=True)
+
+    root.update_idletasks()  
+    window_width = min(root.winfo_width(), root.winfo_screenwidth())
+    window_height = min(root.winfo_height(), root.winfo_screenheight())
+
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    
+    position_x = (screen_width // 2) - (window_width // 2)
+    position_y = (screen_height // 2) - (window_height // 2)
+
+    root.geometry(f"{window_width}x{window_height}+{position_x}+{position_y}")
+    root.config(bg='white')
+    root.wm_attributes('-transparentcolor', 'white')
+    root.wm_attributes('-topmost', True)
+    root.after(5000, root.destroy)
+    print("Displaying: ", text)
+    root.mainloop()
+
 
 def count_tokens(text, encoding_name="cl100k_base"):
     enc = tiktoken.get_encoding(encoding_name)
