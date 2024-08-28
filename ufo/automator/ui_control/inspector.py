@@ -18,7 +18,6 @@ import functools
 
 import comtypes.gen.UIAutomationClient as UIAutomationClient_dll
 
-
 from ufo.config.config import Config
 
 

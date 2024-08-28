@@ -51,11 +51,8 @@ def main():
     sessions = SessionFactory().create_session(
         task=parsed_args.task, mode=parsed_args.mode, plan=parsed_args.plan
     )
-    import time 
-    start_time = time.time()
     clients = UFOClientManager(sessions)
     clients.run_all()
-    print(time.time()-start_time)
     
 
 

@@ -104,7 +104,7 @@ class PlanReader:
                     f"import os\nos.system('start {object_name} \"{file}\"')"
                 )
         code_snippet = code_snippet.replace("\\", "\\\\")
-        print(code_snippet)
+        # print(code_snippet)
         try:
             exec(code_snippet, globals())
             time.sleep(3)  # wait for the app to boot

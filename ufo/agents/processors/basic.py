@@ -85,7 +85,7 @@ class BaseProcessor(ABC):
         self._time_logger = initialize_logger(self.log_path,'process_time.log')
 
     def update_time_log(self,step_name: str, start_time: float, end_time: float) -> None:
-        print(f"{step_name} took {end_time - start_time:.4f} seconds")
+        # print(f"{step_name} took {end_time - start_time:.4f} seconds")
         self._step_time_cnts[step_name] = end_time - start_time
 
     def process(self) -> None:
@@ -110,7 +110,7 @@ class BaseProcessor(ABC):
         }
 
         # Step 1: Print the step information.
-        self.print_step_info()
+        # self.print_step_info()
 
         # Step 2: Capture the screenshot.
         start_time = time.time()

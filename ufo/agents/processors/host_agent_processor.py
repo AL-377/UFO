@@ -151,7 +151,7 @@ class HostAgentProcessor(BaseProcessor):
 
         self.app_to_open = self._response_json.get("AppsToOpen", None)
 
-        self.host_agent.print_response(self._response_json)
+        # self.host_agent.print_response(self._response_json)
 
     def execute_action(self) -> None:
         """

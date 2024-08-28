@@ -101,8 +101,6 @@ class BaseRound(ABC):
         time_out = configs["TIME_OUT"]
         start_time = time.time()
         while not self.is_finished():
-            print("time:",time.time()-start_time)
-            print("time_out:",time_out)
             if time.time() - start_time > time_out:
                 return False
             self.agent.handle(self.context)

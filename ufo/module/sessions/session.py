@@ -206,7 +206,7 @@ class Session(BaseSession):
             for control_item in control_list:
                 try:
                     if control_item.friendly_class_name() == "Dialog" and control_item.window_text() not in  ["Navigation","Help","Editor","Accessibility","Styles"]:
-                        print(f"finding dialog {control_item.window_text()}")
+                        # print(f"finding dialog {control_item.window_text()}")
                         control_item.close()
                     # if self._context.get(ContextNames..APPLICATION_ROOT_NAME) == 'WINWORD.EXE':
                         # self.app_instance = win32com.client.gencache.EnsureDispatch(self.app_root_name)
@@ -219,9 +219,9 @@ class Session(BaseSession):
                 doc.Close(False)  # Argument False indicates not to save changes
             self.application_window.close()
         except Exception as e:
-            print('Error while closing word:', e)
-        finally:
+            # print('Error while closing word:', e)
             os.system("taskkill /f /im WINWORD.EXE")
+        finally:
             time.sleep(configs["SLEEP_TIME"])
 
 class FollowerSession(BaseSession):
@@ -359,7 +359,7 @@ class BatchSession(BaseSession):
 
         # Get a request for the new round.
         request = self.next_request()
-        print(request)
+        # print(request)
 
         # Create a new round and return None if the session is finished.
 
@@ -411,7 +411,7 @@ class BatchSession(BaseSession):
             for control_item in control_list:
                 try:
                     if control_item.friendly_class_name() == "Dialog" and control_item.window_text() not in  ["Navigation","Help","Editor","Accessibility","Styles"]:
-                        print(f"finding dialog {control_item.window_text()}")
+                        # print(f"finding dialog {control_item.window_text()}")
                         control_item.close()
                     # if self._context.get(ContextNames..APPLICATION_ROOT_NAME) == 'WINWORD.EXE':
                         # self.app_instance = win32com.client.gencache.EnsureDispatch(self.app_root_name)
@@ -424,7 +424,7 @@ class BatchSession(BaseSession):
                 doc.Close(False)  # Argument False indicates not to save changes
             self.application_window.close()
         except Exception as e:
-            print('Error while closing word:', e)
-        finally:
+            # print('Error while closing word:', e)
             os.system("taskkill /f /im WINWORD.EXE")
+        finally:
             time.sleep(configs["SLEEP_TIME"])

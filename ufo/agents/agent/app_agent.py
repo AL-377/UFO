@@ -164,38 +164,38 @@ class AppAgent(BasicAgent):
         # Generate the function call string
         action = self.Puppeteer.get_command_string(function_call, args)
 
-        utils.print_with_color(
-            "Observations👀: {observation}".format(observation=observation), "cyan"
-        )
+        # utils.print_with_color(
+        #     "Observations👀: {observation}".format(observation=observation), "cyan"
+        # )
         utils.print_with_color("Thoughts💡: {thought}".format(thought=thought), "green")
-        utils.print_with_color(
-            "Selected item🕹️: {control_text}, Label: {label}".format(
-                control_text=control_text, label=control_label
-            ),
-            "yellow",
-        )
-        utils.print_with_color(
-            "Action applied⚒️: {action}".format(action=action), "blue"
-        )
-        utils.print_with_color("Status📊: {status}".format(status=status), "blue")
-        utils.print_with_color(
-            "Next Plan📚: {plan}".format(plan="\n".join(plan)), "cyan"
-        )
-        utils.print_with_color("Comment💬: {comment}".format(comment=comment), "green")
+        # utils.print_with_color(
+        #     "Selected item🕹️: {control_text}, Label: {label}".format(
+        #         control_text=control_text, label=control_label
+        #     ),
+        #     "yellow",
+        # )
+        # utils.print_with_color(
+        #     "Action applied⚒️: {action}".format(action=action), "blue"
+        # )
+        # utils.print_with_color("Status📊: {status}".format(status=status), "blue")
+        # utils.print_with_color(
+        #     "Next Plan📚: {plan}".format(plan="\n".join(plan)), "cyan"
+        # )
+        # utils.print_with_color("Comment💬: {comment}".format(comment=comment), "green")
 
         screenshot_saving = response_dict.get("SaveScreenshot", {})
 
-        if screenshot_saving.get("save", False):
-            utils.print_with_color(
-                "Notice: The current screenshot📸 is saved to the blackboard.",
-                "yellow",
-            )
-            utils.print_with_color(
-                "Saving reason: {reason}".format(
-                    reason=screenshot_saving.get("reason")
-                ),
-                "yellow",
-            )
+        # if screenshot_saving.get("save", False):
+        #     utils.print_with_color(
+        #         "Notice: The current screenshot📸 is saved to the blackboard.",
+        #         "yellow",
+        #     )
+        #     utils.print_with_color(
+        #         "Saving reason: {reason}".format(
+        #             reason=screenshot_saving.get("reason")
+        #         ),
+        #         "yellow",
+        #     )
 
     def external_knowledge_prompt_helper(
         self, request: str, offline_top_k: int, online_top_k: int
