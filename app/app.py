@@ -10,7 +10,7 @@ import win32com.client
 
 app = Flask(__name__)
 
-tasks_dir = "sample/word/tasks/"
+tasks_dir = "experiment/tasks/"
 logs_dirs = "logs/"
 
 def close_docs():
