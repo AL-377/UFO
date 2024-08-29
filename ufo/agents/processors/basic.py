@@ -157,6 +157,7 @@ class BaseProcessor(ABC):
         start_time = time.time()
         res = self.parse_response()
         if not res:
+            self.status = self._agent_status_manager.ERROR.value
             return
         end_time = time.time()
         self.update_time_log("Parse response", start_time, end_time)
