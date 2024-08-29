@@ -1,0 +1,14 @@
+{
+   
+    "task": "Insert a header named 'header' and a footer named 'footer'.",
+    "file_path": "./cache/prefill/test_2.docx",
+    "refined_steps": [
+        "Switch to the insert tab",
+        "Click the header button",
+        "Choose one header type",
+        "Type in header content into the header",
+        "Click the footer button",
+        "Choose one footer type",
+        "Type in footer content into the footer"
+    ]
+}

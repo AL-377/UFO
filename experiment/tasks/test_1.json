@@ -1,0 +1,12 @@
+{
+    "task": "Here is an article, generate a title 'Impossible Friendship between mouse and cats' and set the title in the center with Arial of 20 font size.  ",
+    "file_path": "./cache/prefill/test_1.docx",
+    "refined_steps": [
+        "type in a title for the article",
+        "Go to the Home tab",
+        "select the title",
+        "change the font to Arial",
+        "change the font size to 20",
+        "Click the center button to align the text to center"
+    ]
+}

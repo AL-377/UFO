@@ -1,0 +1,12 @@
+{
+    "task": "Insert 2 shapes into document (1) Insert a rectangle with a width and height of 1 inch, and set the fill color to red. (2)Insert a circle with a width and height of 1 inch, and set the fill color to yellow.",
+    "file_path": "./cache/prefill/test_5.docx",
+    "refined_steps": [
+        "Click the layout tab",
+        "Click the text direction button",
+        "Click the vertical button.",
+        "Click the design tab",
+        "Click the watermark button",
+        "Click the confidential1 style"
+    ]
+}

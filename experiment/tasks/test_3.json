@@ -1,0 +1,16 @@
+{
+    "task": "Change the titles style of each sections into heading1 style.",
+    "file_path": "./cache/prefill/test_3.docx",
+    "refined_steps": [
+        "Switch to the Home tab",
+        "Select 'Section1'",
+        "Click the Styles button",
+        "Click the Heading 1 style",
+        "Select 'Section2'",
+        "Click the Styles button",
+        "Click the Heading 1 style",
+        "Select 'Section3'",
+        "Click the Styles button",
+        "Click the Heading 1 style"
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "task": "I want to make a special format for company:  insert a 2x2 table, then change the paper size in Word to A4, change the text direction to vertical and add water mark with confidential 1 type. ",
+    "file_path": "./cache/prefill/test_4.docx",
+    "refined_steps": [
+        "Click the layout tab",
+        "Click the text direction button",
+        "Click the vertical button.",
+        "Click the design tab",
+        "Click the watermark button",
+        "Click the confidential1 style"
+    ]
+}
