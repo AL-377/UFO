@@ -155,7 +155,9 @@ class BaseProcessor(ABC):
 
         # Step 7: Parse the response, if there is no error.
         start_time = time.time()
-        self.parse_response()
+        res = self.parse_response()
+        if not res:
+            return
         end_time = time.time()
         self.update_time_log("Parse response", start_time, end_time)
 
@@ -260,7 +262,7 @@ class BaseProcessor(ABC):
         pass
 
     @abstractmethod
-    def parse_response(self) -> None:
+    def parse_response(self) -> bool:
         """
         Parse the response.
         """

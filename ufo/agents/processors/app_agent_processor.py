@@ -280,7 +280,7 @@ class AppAgentProcessor(BaseProcessor):
             self.llm_error_handler()
             return
 
-    def parse_response(self) -> None:
+    def parse_response(self) -> bool:
         """
         Parse the response.
         """
@@ -291,7 +291,6 @@ class AppAgentProcessor(BaseProcessor):
 
         except Exception:
             self.general_error_handler()
-
         self._control_label = self._response_json.get("ControlLabel", "")
         self.control_text = self._response_json.get("ControlText", "")
         self._operation = self._response_json.get("Function", "")
@@ -308,7 +307,11 @@ class AppAgentProcessor(BaseProcessor):
         )
 
         self.status = self._response_json.get("Status", "")
-        self.app_agent.print_response(self._response_json)
+        try:
+            self.app_agent.print_response(self._response_json)
+        except Exception:
+            return False
+        return True
 
     def execute_action(self) -> None:
         """

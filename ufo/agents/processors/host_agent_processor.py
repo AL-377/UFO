@@ -125,7 +125,7 @@ class HostAgentProcessor(BaseProcessor):
         except Exception:
             self.llm_error_handler()
 
-    def parse_response(self) -> None:
+    def parse_response(self) -> bool:
         """
         Parse the response.
         """
@@ -152,6 +152,7 @@ class HostAgentProcessor(BaseProcessor):
         self.app_to_open = self._response_json.get("AppsToOpen", None)
 
         # self.host_agent.print_response(self._response_json)
+        return True
 
     def execute_action(self) -> None:
         """

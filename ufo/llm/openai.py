@@ -104,6 +104,7 @@ class OpenAIService(BaseService):
                 max_tokens=max_tokens,
                 top_p=top_p,
                 stream=stream,
+                # seed=37,
                 **kwargs,
             )
 

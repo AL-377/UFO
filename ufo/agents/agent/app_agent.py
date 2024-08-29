@@ -58,6 +58,7 @@ class AppAgent(BasicAgent):
         self.online_doc_retriever = None
         self.experience_retriever = None
         self.human_demonstration_retriever = None
+        self.thought = ""
 
         self.Puppeteer = self.create_puppteer_interface()
         self.set_state(ContinueAppAgentState())
@@ -155,6 +156,7 @@ class AppAgent(BasicAgent):
             control_label = "[No control label selected.]"
         observation = response_dict.get("Observation")
         thought = response_dict.get("Thought")
+
         plan = response_dict.get("Plan")
         status = response_dict.get("Status")
         comment = response_dict.get("Comment")
@@ -196,6 +198,9 @@ class AppAgent(BasicAgent):
         #         ),
         #         "yellow",
         #     )
+        if thought == self.thought:
+            raise ValueError("The thought is the same as the previous thought. Please check the response.")
+        self.thought = thought
 
     def external_knowledge_prompt_helper(
         self, request: str, offline_top_k: int, online_top_k: int
