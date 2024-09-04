@@ -76,14 +76,14 @@ if __name__ == '__main__':
     doc_template_dir = r".\templates\word"
     doc_files_description = json.load(open(os.path.join(doc_template_dir, "description.json")))
     # the directory to save the samples with original template files
-    save_tasks_dir = r".\sample\repair_ori_samples"
+    save_tasks_dir = r".\sample\repair_samples_7"
     os.makedirs(os.path.join(save_tasks_dir, "files"), exist_ok=True)
     os.makedirs(os.path.join(save_tasks_dir, "tasks"), exist_ok=True)
     # the directory of the temp samples(with modified files)
-    samples_task_dir = r".\sample\repair_samples_50\tasks"
+    samples_task_dir = r".\sample\sample_7\sample\task"
     task_files = glob.glob(samples_task_dir + "\*")
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(process_task, task_file, doc_files_description, doc_template_dir, save_tasks_dir) for task_file in task_files]
         for future in as_completed(futures):
             try:

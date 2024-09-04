@@ -82,11 +82,11 @@ class PlanReader:
     
     def get_file_path(self):
         
-        # file_path = os.path.dirname(os.path.abspath(self.plan_file)).replace('tasks', 'files')
-        # file = os.path.basename(self.plan.get("action_prefill_file_path", ))
+        file_path = os.path.dirname(os.path.abspath(self.plan_file)).replace('tasks', 'files')
+        file = os.path.basename(self.plan.get("action_prefill_file_path", ))
         
-        # return os.path.join(file_path, file)
-        return self.plan.get("action_prefill_file_path", )
+        return os.path.join(file_path, file)
+        # return self.plan.get("action_prefill_file_path", )
     
     def get_host_request(self) -> str:
         """
