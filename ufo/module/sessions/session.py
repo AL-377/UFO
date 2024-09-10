@@ -379,7 +379,7 @@ class BatchSession(BaseSession):
         """
 
         super().__init__(task, should_evaluate, id)
-
+        os.system("taskkill /f /im WINWORD.EXE")
         self.plan_reader = PlanReader(plan_file)
     
     

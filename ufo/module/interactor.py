@@ -76,7 +76,7 @@ def question_asker(question: str, index: int) -> str:
         "cyan",
     )
 
-    return False
+    return 'False'
 
 
 def sensitive_step_asker(action, control_text) -> bool:

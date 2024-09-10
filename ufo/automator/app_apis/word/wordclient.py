@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 from typing import Dict, Type
+import os
 
 from ufo.automator.app_apis.basic import WinCOMCommand, WinCOMReceiverBasic
 from ufo.automator.basic import CommandBasic
@@ -25,7 +26,6 @@ class WordWinCOMReceiver(WinCOMReceiverBasic):
         for doc in self.client.Documents:
             if doc.Name == matched_object:
                 return doc
-
         return None
 
     def insert_table(self, rows: int, columns: int) -> object:
