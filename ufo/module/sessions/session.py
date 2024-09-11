@@ -6,6 +6,7 @@ import time
 from typing import List
 from ufo.automator.ui_control.inspector import ControlInspectorFacade
 import win32com.client
+import psutil
 
 from ufo import utils
 from ufo.agents.states.app_agent_state import ContinueAppAgentState
@@ -379,7 +380,10 @@ class BatchSession(BaseSession):
         """
 
         super().__init__(task, should_evaluate, id)
-        os.system("taskkill /f /im WINWORD.EXE")
+        for process in psutil.process_iter(['name']):
+            if process.info['name'] == 'WINWORD.EXE':
+                os.system('taskkill /f /im WINWORD.EXE')
+                time.sleep(1)
         self.plan_reader = PlanReader(plan_file)
     
     
