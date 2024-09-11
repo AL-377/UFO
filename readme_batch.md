@@ -1,10 +1,27 @@
 ### How to run: 
 
-python -m ufo -m batch_query -p path
+python -m ufo -m batch_query -p path(path of the tasks directory)
 
-### Change endpoint: lam and gpt
+### Configs for LAM
+**Tips**
+This repo is for LAM backend UFO.In the `config_dev.yaml` and  `config.yaml`, you will find the related configs
 
-Config it in the config.yaml. 
+(1) Api Info
+- `APPAGENT_PROMPT: "ufo/prompts/share/lam/{version}/app_agent.yaml"`
+
+(2) Template Version 
+- `LAM_TEMPLATE_VERSION: 2`
+
+Note: the endpoint now is version 2.
+
+(3) LAM endpoint (in `config.yaml`)
+``` json
+APP_AGENT: {
+  VISUAL_MODE: False, # Whether to use the visual mode
+  API_TYPE: "lam" , # The API type, "openai" for the OpenAI API, "aoai" for the AOAI API, 'azure_ad' for the ad authority of the AOAI API.  
+  API_BASE: "http://url:port/", # The url of endpoint
+}
+```
 
 ### Task format
 
@@ -20,8 +37,10 @@ Conda activate ufo
 
 ### Scene.
 1. Data collection:
-    1.1 LAM
-    1.2 GPT
+
+    1.1 LAM: branch lam-adp
+
+    1.2 GPT: branch ufo-adp
 2. Online Eval
 
 ### Analysize
